@@ -16,7 +16,7 @@ class DummyModel:
 
 
 class PreprocessingTests(unittest.TestCase):
-    def test_default_matches_model_internal_rescaling(self) -> None:
+    def test_default_uses_automatic_preprocessing_selection(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             service = ModelService()
         self.assertEqual(service.preprocessing, "auto")
