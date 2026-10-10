@@ -45,7 +45,7 @@ async def home() -> FileResponse:
 
 @app.get("/api/health")
 async def health() -> dict:
-    return model_service.health()
+    return {**model_service.health(), "max_upload_mb": MAX_UPLOAD_MB}
 
 
 @app.post("/api/predict")
