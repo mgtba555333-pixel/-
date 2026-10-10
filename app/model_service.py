@@ -289,31 +289,97 @@ class ModelService:
         return np.expand_dims(pixels, axis=0)
 
     def _compute_gradcam(self, batch: np.ndarray, class_index: int) -> dict[str, Any]:
+        """Compute Grad-CAM from a direct conv layer or the last conv inside a nested backbone."""
         if self.model is None:
             raise ModelUnavailableError(self.unavailable_message)
 
         import tensorflow as tf
 
-        conv_layer = next(
+        def has_conv(model: Any) -> bool:
+            return any(isinstance(layer, tf.keras.layers.Conv2D) for layer in model.layers)
+
+        def class_score_for(predictions: Any) -> Any:
+            if self.output_mode == "binary_sigmoid":
+                positive_score = predictions[:, 0]
+                return positive_score if class_index == 1 else (1.0 - positive_score)
+            return predictions[:, class_index]
+
+        # Some Keras applications expose all convolution layers at the root level.
+        direct_conv = next(
             (layer for layer in reversed(self.model.layers) if isinstance(layer, tf.keras.layers.Conv2D)),
             None,
         )
-        if conv_layer is None:
-            raise ModelConfigurationError("لم يتم العثور على طبقة Conv2D مناسبة لإنشاء Grad-CAM.")
+        if direct_conv is not None:
+            grad_model = tf.keras.Model(
+                inputs=self.model.inputs,
+                outputs=[direct_conv.output, self.model.output],
+            )
+            with self._lock:
+                with tf.GradientTape() as tape:
+                    conv_outputs, predictions = grad_model(batch, training=False)
+                    class_score = class_score_for(predictions)
+                gradients = tape.gradient(class_score, conv_outputs)
+            layer_label = direct_conv.name
+        else:
+            # MobileNetV2 is commonly wrapped as a nested Functional/Model layer.
+            base_model = next(
+                (
+                    layer for layer in reversed(self.model.layers)
+                    if isinstance(layer, tf.keras.Model) and has_conv(layer)
+                ),
+                None,
+            )
+            if base_model is None:
+                raise ModelConfigurationError(
+                    "لم يتم العثور على طبقة التفاف داخل النموذج لإنشاء Grad-CAM."
+                )
+            conv_layer = next(
+                layer for layer in reversed(base_model.layers)
+                if isinstance(layer, tf.keras.layers.Conv2D)
+            )
 
-        grad_model = tf.keras.Model(
-            inputs=self.model.inputs,
-            outputs=[conv_layer.output, self.model.output],
-        )
-        with self._lock:
-            with tf.GradientTape() as tape:
-                conv_outputs, predictions = grad_model(batch, training=False)
-                if self.output_mode == "binary_sigmoid":
-                    positive_score = predictions[:, 0]
-                    class_score = positive_score if class_index == 1 else (1.0 - positive_score)
-                else:
-                    class_score = predictions[:, class_index]
-            gradients = tape.gradient(class_score, conv_outputs)
+            feature_model = tf.keras.Model(
+                inputs=base_model.inputs,
+                outputs=conv_layer.output,
+            )
+            tail_model = tf.keras.Model(
+                inputs=conv_layer.output,
+                outputs=base_model.output,
+            )
+
+            post_layers: list[Any] = []
+            found_base = False
+            for layer in self.model.layers:
+                if layer is base_model:
+                    found_base = True
+                    continue
+                if found_base and not isinstance(layer, tf.keras.layers.InputLayer):
+                    post_layers.append(layer)
+
+            head_model = None
+            if post_layers:
+                base_shape = tuple(
+                    int(dim) if dim is not None else None
+                    for dim in base_model.output.shape[1:]
+                )
+                head_input = tf.keras.Input(shape=base_shape)
+                head_output = head_input
+                for layer in post_layers:
+                    head_output = layer(head_output)
+                head_model = tf.keras.Model(inputs=head_input, outputs=head_output)
+
+            with self._lock:
+                with tf.GradientTape() as tape:
+                    conv_outputs = feature_model(batch, training=False)
+                    tape.watch(conv_outputs)
+                    base_output = tail_model(conv_outputs, training=False)
+                    predictions = (
+                        head_model(base_output, training=False)
+                        if head_model is not None else base_output
+                    )
+                    class_score = class_score_for(predictions)
+                gradients = tape.gradient(class_score, conv_outputs)
+            layer_label = f"{base_model.name}/{conv_layer.name}"
 
         if gradients is None:
             raise ModelConfigurationError("تعذر حساب التدرجات لطبقة الالتفاف المختارة.")
@@ -332,7 +398,7 @@ class ModelService:
         return {
             "available": True,
             "method": "Grad-CAM",
-            "target_layer": conv_layer.name,
+            "target_layer": layer_label,
             "width": int(values.shape[1]),
             "height": int(values.shape[0]),
             "heatmap": np.round(values, 3).tolist(),
