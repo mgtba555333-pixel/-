@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 from PIL import Image
@@ -14,6 +16,12 @@ class DummyModel:
 
 
 class PreprocessingTests(unittest.TestCase):
+    def test_default_matches_model_internal_rescaling(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            service = ModelService()
+        self.assertEqual(service.preprocessing, "raw")
+        self.assertEqual(service.color_order, "rgb")
+
     def make_service(self, preprocessing: str = "unit", color_order: str = "rgb") -> ModelService:
         service = ModelService()
         service.model = DummyModel()
