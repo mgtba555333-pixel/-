@@ -76,13 +76,13 @@ Put the two model files in `./model/` first. Docker mounts that directory read-o
 ## Model and evaluation notes
 
 - The model is loaded from `MODEL_PATH`; label names are read from `MODEL_CLASSES_PATH`.
-- `XRAY_PREPROCESSING` supports `raw` (0–255 pixel values), `unit` (0–1 scaling), `resnet50`, and `mobilenet_v2`. `XRAY_COLOR_ORDER` supports `rgb` and `bgr`. **Match both settings to the exact training pipeline before interpreting outputs.**
+- `XRAY_PREPROCESSING` supports `raw` (0–255 pixel values), `unit` (0–1 scaling), `resnet50`, and `mobilenet_v2` for compatible models. The current upstream model includes its own `Rescaling(1./255)` layer, so use `raw`; the backend rejects double-scaling configurations. `XRAY_COLOR_ORDER` supports `rgb` and `bgr`; the inspected training notebook expects RGB.
 - The original project contains legacy inference code. Validate input dimensions, color channel order, label ordering, calibration, patient-level leakage, sensitivity, specificity, and external generalization before any research claims.
 - Confidence values are model scores, not calibrated probabilities and not a measure of clinical certainty.
 
 ## Inference, Grad-CAM, and evaluation
 
-The inspected upstream notebook uses a 180 × 180 RGB input pipeline, a `Rescaling(1./255)` layer, and a two-class softmax output. PulmoSight defaults to direct bilinear resize, RGB channels, and `unit` scaling to match that notebook. The upstream inference script appears to differ from its training pipeline, so review `docs/MODEL_CARD.md` before interpreting results.
+The inspected upstream notebook uses a 180 × 180 RGB input pipeline, an internal `Rescaling(1./255)` layer, and a two-class softmax output. PulmoSight defaults to direct bilinear resize, RGB channels, and raw 0–255 pixel values so that the model's internal layer performs normalization exactly once. The service rejects `unit` preprocessing if a loaded model already contains a Rescaling layer. The upstream inference script appears to differ from the training pipeline in aspect-ratio handling and channel order, so review `docs/MODEL_CARD.md` before interpreting results.
 
 When the loaded architecture supports it, the API returns an optional Grad-CAM map from the last Conv2D layer. It is only a visualization of model attention; it is not a lesion segmentation or clinical explanation. If heatmap generation fails, the actual model output is still returned, but no fake heatmap is substituted.
 
