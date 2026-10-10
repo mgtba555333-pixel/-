@@ -191,6 +191,11 @@
             <div class="result-score"><span>درجة المخرج الأعلى</span><strong id="resultScore">—</strong><small>ليست دقة تشخيصية سريرية</small></div>
           </div>
           <div class="score-breakdown" id="scoreBreakdown"></div>
+          <section class="explanation-block" id="explanationBlock" hidden aria-label="توضيح Grad-CAM">
+            <div class="explanation-heading"><div><h4>خريطة اهتمام النموذج</h4><p>Grad-CAM · Visual explanation</p></div><span class="explanation-tag">EXPERIMENTAL</span></div>
+            <div class="heatmap-stage" id="heatmapStage" hidden><canvas id="explanationCanvas" aria-label="خريطة حرارية توضيحية فوق صورة الأشعة"></canvas></div>
+            <p class="explanation-caption" id="explanationCaption">الخريطة توضيح تجريبي وليست تحديداً لمكان الإصابة.</p>
+          </section>
           <div class="result-disclaimer"><span>ⓘ</span><p id="resultNotice">نتيجة بحثية آلية. يجب أن يفسر اختصاصي الأشعة الصورة والنتيجة ضمن السياق السريري.</p></div>
         </div>
       </section>
