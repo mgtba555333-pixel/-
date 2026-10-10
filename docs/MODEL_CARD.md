@@ -17,14 +17,14 @@ The checked-in training notebook `notebooks/chest_xray.ipynb` contains the follo
 - The visible notebook sets `epochs=3`.
 - The notebook assigns a folder named `Test` to the `validation_data` argument during training.
 
-The service's default input configuration therefore uses direct 180 × 180 bilinear resize, RGB channels, and 0–1 scaling. These settings should be re-confirmed against the exact weight file before relying on any output.
+The model's first layer performs `Rescaling(1./255)` internally. Correct input therefore uses direct 180 × 180 bilinear resize, RGB channels, and raw 0–255 pixel values; the model then normalizes internally. The backend rejects external `unit` scaling if it detects this internal layer, to prevent accidental double normalization. These settings should be re-confirmed against the exact weight file before relying on any output.
 
 ## Known concerns
 
 1. **Loss/activation mismatch:** the notebook declares `Dense(num_classes, activation='softmax')` and compiles with `SparseCategoricalCrossentropy(from_logits=True)`. This setting is inconsistent: `from_logits=True` is intended for raw logits, not probabilities already produced by softmax. The trained weights may be affected.
 2. **Validation protocol:** the folder named `Test` is used as validation data during `fit`; the notebook does not show a separate untouched, independent final test protocol.
 3. **Short training run:** the visible notebook trains for only three epochs. This alone is insufficient to establish model quality.
-4. **Legacy inference path:** the upstream inference script applies OpenCV channel conversion after obtaining a PIL image array and uses `ImageOps.fit`; these choices do not match the notebook's RGB directory loader and direct image resize. PulmoSight uses the training-notebook path by default, not these apparent inference discrepancies.
+4. **Legacy inference path:** the upstream inference script applies OpenCV channel conversion after obtaining a PIL image array and uses `ImageOps.fit`; these choices do not match the notebook's RGB directory loader and direct image resize. PulmoSight uses the training-notebook path by default: direct resize, RGB channels and raw 0–255 input for the model's internal Rescaling layer, not these apparent inference discrepancies.
 5. **Calibration and generalization:** the repository does not establish calibrated probabilities, a reliable operating threshold, robust external generalization, or clinical utility.
 
 ## Explainability
