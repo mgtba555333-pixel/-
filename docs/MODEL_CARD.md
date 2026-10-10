@@ -1,56 +1,53 @@
-# Model Card — Upstream Chest X-ray Classifier
+# Model Card — Pinned Pediatric Chest X-ray Classifier
 
-## Purpose and intended use
+## Model artifact in this application
 
-This is an inherited educational research classifier for two image folders/classes: `NORMAL` and `PNEUMONIA`. It is not validated for clinical deployment and must not be used for diagnosis, triage, or treatment decisions.
+- **Repository:** [ayushirathour/chest-xray-pneumonia-detection](https://huggingface.co/ayushirathour/chest-xray-pneumonia-detection)
+- **Revision:** `65ee3acc9ec589cdb0d1b081dd58c31ef9fed675`
+- **File:** `best_chest_xray_model.h5`
+- **Published size:** 11,376,320 bytes
+- **Published SHA-256:** `7c85dc7a21b465b89d4a67a95d3a30a81e3f9748a1bdf048001521c1daa3f9d6`
+- **License metadata:** MIT; see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+- **Architecture stated by publisher:** MobileNetV2 with a binary sigmoid head.
+- **Task:** Normal vs pneumonia classification on pediatric chest radiographs.
 
-Upstream source: [inuwamobarak/chest-xray-pneumonia-detection](https://github.com/inuwamobarak/chest-xray-pneumonia-detection).
+## How PulmoSight obtains the weights
 
-## What was verified from the upstream notebook
+On first start, the backend can download the pinned file from Hugging Face using `huggingface_hub`. Before it loads the model, PulmoSight checks the downloaded file against the SHA-256 above. A mismatched file is not accepted. The H5 file is stored locally in the ignored `model/` directory, not committed to this Git repository.
 
-The checked-in training notebook `notebooks/chest_xray.ipynb` contains the following configuration:
+Manual download command:
 
-- Input resize: 180 × 180.
-- Training data loader: `image_dataset_from_directory`, whose directory class order is exposed as `train_ds.class_names`.
-- Model begins with a `Rescaling(1./255)` layer.
-- The CNN includes Conv2D feature layers and ends with a two-unit Dense layer using `softmax`.
-- The visible notebook sets `epochs=3`.
-- The notebook assigns a folder named `Test` to the `validation_data` argument during training.
-
-The model's first layer performs `Rescaling(1./255)` internally. Correct input therefore uses direct 180 × 180 bilinear resize, RGB channels, and raw 0–255 pixel values; the model then normalizes internally. The backend rejects external `unit` scaling if it detects this internal layer, to prevent accidental double normalization. These settings should be re-confirmed against the exact weight file before relying on any output.
-
-## Known concerns
-
-1. **Loss/activation mismatch:** the notebook declares `Dense(num_classes, activation='softmax')` and compiles with `SparseCategoricalCrossentropy(from_logits=True)`. This setting is inconsistent: `from_logits=True` is intended for raw logits, not probabilities already produced by softmax. The trained weights may be affected.
-2. **Validation protocol:** the folder named `Test` is used as validation data during `fit`; the notebook does not show a separate untouched, independent final test protocol.
-3. **Short training run:** the visible notebook trains for only three epochs. This alone is insufficient to establish model quality.
-4. **Legacy inference path:** the upstream inference script applies OpenCV channel conversion after obtaining a PIL image array and uses `ImageOps.fit`; these choices do not match the notebook's RGB directory loader and direct image resize. PulmoSight uses the training-notebook path by default: direct resize, RGB channels and raw 0–255 input for the model's internal Rescaling layer, not these apparent inference discrepancies.
-5. **Calibration and generalization:** the repository does not establish calibrated probabilities, a reliable operating threshold, robust external generalization, or clinical utility.
-
-## Explainability
-
-Grad-CAM is generated from the last `Conv2D` layer available in the loaded model. It is a rough visualization of activation gradients for the selected class, not a lesion boundary, pathology finding, or proof that the model relied on clinically relevant anatomy. The user interface must keep this limitation visible. If Grad-CAM cannot be generated, the app shows that it is unavailable rather than fabricating a heatmap.
-
-## Evaluation protocol
-
-Use the separate evaluation script only on a held-out folder structure with one folder per model class:
-
-```text
-test-data/
-  NORMAL/
-  PNEUMONIA/
+```bash
+python scripts/download_model.py
 ```
 
-Before running, verify the image labels, remove any patient overlap with the training set, check class balance, and keep this evaluation set out of model fitting and threshold selection. The report computes accuracy, class-wise precision/recall/F1, one-vs-rest specificity, a confusion matrix, and ROC-AUC when the two-class data contain both classes. Report metrics with uncertainty estimates and external validation in any future scientific work.
+The checksum was taken from the model-host file metadata. It verifies file identity, not clinical quality or source integrity beyond that pinned artifact.
 
-## Privacy, fairness, and distribution shift
+## Input/output details documented by the publisher
 
-The source dataset is described by the upstream project as pediatric chest radiographs. A model trained on such data should not be assumed to generalize to adults, other hospitals, scanner types, acquisition views, or patient populations. Avoid uploading identifiable patient data to public demos or untrusted services.
+- Expected input size: 224 × 224 RGB.
+- Input resize: 224 × 224.
+- Pixel scaling in the published example: convert to float and divide by 255 (range 0–1).
+- Model output: a single sigmoid value, interpreted in the example as the pneumonia score.
+- Class mapping used by PulmoSight: `NORMAL = 1 - score`, `PNEUMONIA = score`.
 
-## License and provenance
+PulmoSight uses these published preprocessing instructions for this pinned model. If the loaded file exposes an internal `Rescaling` layer, auto mode switches to raw 0–255 input to prevent double scaling. Always inspect the loaded model metadata when replacing the checkpoint.
 
-Review the upstream repository, model, and dataset licenses/terms before reuse or redistribution. This repository keeps pretrained weights out of Git; local developers must obtain and place authorized files separately.
+## What has and has not been verified here
 
-## Bottom line
+The public model card states that the model targets pediatric chest X-rays (ages 1–5) and reports results on an independent cohort. Those figures are publisher-reported and have **not** been independently reproduced as part of this coding task. Passing software tests does not validate the medical model.
 
-The integration is an engineering and research baseline. Its outputs are not clinically validated; independent medical and statistical review is required before any patient-facing use.
+The repository's automated tests currently cover:
+- Image preprocessing shape and value range.
+- RGB/BGR channel behavior.
+- Binary sigmoid and multiclass score conversion.
+- Metric helper calculations.
+- The API refusing to fabricate a result when the model is unavailable.
+
+End-to-end loading and inference on the downloaded H5 must still be verified in an environment with the model file and compatible TensorFlow installed. Grad-CAM may be unavailable for some Keras model graph layouts; if so, the web app displays that limitation rather than fabricating a heatmap.
+
+## Limitations and responsible use
+
+This is a research/engineering integration only. It is not a medical device and must not be used to diagnose, triage, or treat patients. Pediatric data must not be assumed to generalize to adults or to different hospitals, scanners, acquisition views, or populations. Model output scores are not established here as calibrated clinical probabilities.
+
+Before any clinical or patient-facing use, a qualified team would need to verify dataset provenance and licensing, ensure patient-level train/test separation, independently reproduce results, assess calibration and subgroup performance, run external validation, and obtain appropriate regulatory and clinical review.
