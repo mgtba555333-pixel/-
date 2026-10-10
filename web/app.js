@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const MAX_MB = 12;
+  let MAX_MB = 12;
   const HISTORY_KEY = "pulmosight.sessionHistory.v1";
   const $ = (id) => document.getElementById(id);
   const fileInput = $("fileInput");
@@ -170,6 +170,7 @@
       const data = await response.json();
       apiReachable = true;
       modelReady = Boolean(data.model_ready);
+      MAX_MB = Number(data.max_upload_mb) || 12;
       setText("metricApiStatus", "متصل");
       setText("metricApiFoot", "خادم التحليل يستجيب");
       setStatusDot("metricApiDot", "ready");
