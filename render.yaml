@@ -2,10 +2,10 @@ services:
   - type: web
     name: pulmosight-ai
     runtime: docker
-    plan: starter
+    plan: standard
     healthCheckPath: /api/health
     envVars:
       - key: MODEL_AUTO_DOWNLOAD
         value: "false"
       - key: MODEL_PATH
-        value: "/app/model/best_chest_xray_model.h5"
+        value: "/workspace/model/best_chest_xray_model.h5"
