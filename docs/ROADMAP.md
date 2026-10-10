@@ -12,13 +12,14 @@
 ## Phase 1 — Reproducible inference
 
 - [x] Select a pretrained model whose Hugging Face repository advertises an MIT license and document attribution.
-- [x] Add a pinned downloader with a fixed revision and SHA-256 verification; keep weights out of Git history.
+- [x] Add a pinned downloader with a fixed revision and SHA-256 verification, then commit the 11.4 MB model after verification.
 - [x] Support binary sigmoid model outputs and load the model input dimensions dynamically.
 - [x] Inspect the selected model card and implement its documented 224×224 RGB input and 0–1 scaling.
 - [x] Validate input/output shapes and preserve already-normalized softmax scores without applying softmax twice.
 - [x] Add unit tests for preprocessing dimensions, color order, raw pixel range, and the default configuration.
 - [x] Ensure API responses and UI labels match configured model metadata.
-- [ ] Download the model in a runtime environment, load the H5 file with TensorFlow 2.19, and verify end-to-end inference against authorized held-out images.
+- [x] Load the committed H5 file with TensorFlow 2.19 and run a synthetic-input inference smoke test; verify the pinned model's Grad-CAM path.
+- [ ] Evaluate predictions on an authorized, independent held-out dataset; no medical accuracy claim is established by the smoke test.
 
 ## Phase 2 — Explainability and evaluation
 
