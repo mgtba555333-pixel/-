@@ -199,6 +199,14 @@ a{color:inherit;text-decoration:none}button,input{font:inherit}button{cursor:poi
 .score-track{height:6px;border-radius:20px;background:#1e3045;overflow:hidden}
 .score-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#5daec0,#77e2be);width:0;transition:width .5s ease}
 .score-percent{text-align:left;font:700 10px Manrope,sans-serif;color:#abc0ce;direction:ltr}
+.explanation-block{border-top:1px solid var(--border);padding:16px 0 14px}
+.explanation-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.explanation-heading h4{margin:0;font-size:11px;color:#c9d9e5;font-weight:600}
+.explanation-heading p{margin:3px 0 0;color:#73899d;font:9px Manrope,sans-serif}
+.explanation-tag{font:700 7px Manrope,sans-serif;letter-spacing:.8px;color:#b9a7ff;border:1px solid rgba(189,171,255,.18);border-radius:5px;padding:4px 7px}
+.heatmap-stage{display:grid;place-items:center;min-height:150px;border:1px solid var(--border);border-radius:10px;background:#07101a;padding:8px;overflow:hidden}
+.heatmap-stage canvas{max-width:100%;max-height:420px;object-fit:contain;display:block;border-radius:5px}
+.explanation-caption{margin:8px 0 0;color:#7a8ea2;font-size:9px;line-height:1.8}
 .result-disclaimer{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:9px;border:1px solid rgba(240,194,125,.14);background:rgba(240,194,125,.035);color:var(--amber)}
 .result-disclaimer>span{font-size:14px}
 .result-disclaimer p{margin:0;color:#a99c86;font-size:9px;line-height:1.9}
