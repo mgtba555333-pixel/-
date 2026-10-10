@@ -17,6 +17,7 @@ REQUIRED_FILES = (
     "docker-compose.yml",
     "scripts/evaluate_model.py",
     "tests/test_preprocessing.py",
+    "tests/test_evaluation_metrics.py",
 )
 
 
