@@ -169,6 +169,8 @@ a{color:inherit;text-decoration:none}button,input{font:inherit}button{cursor:poi
 .model-details span{font-size:10px;color:#7a8da3}
 .model-details strong{font-size:10px;font-weight:600;text-align:left;color:#c5d2df;overflow-wrap:anywhere}
 .model-details .code-value{font:10px Manrope,sans-serif;color:var(--mint)}
+.model-details a{color:#9bd4d3;text-decoration:underline;text-decoration-color:rgba(155,212,211,.25);text-underline-offset:3px}
+.model-details a:hover{color:var(--mint)}
 .button-secondary{min-height:38px;background:rgba(255,255,255,.025);color:#adc0d0;border:1px solid var(--border-strong);font-size:10px}
 .button-secondary:hover{border-color:rgba(106,224,188,.35);color:var(--mint)}
 .full-width{width:100%}
