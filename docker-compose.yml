@@ -1,0 +1,14 @@
+services:
+  pulmosight:
+    build: .
+    container_name: pulmosight-ai
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PATH: /models/xray_model.hdf5
+      MODEL_CLASSES_PATH: /models/model_classes.txt
+      XRAY_PREPROCESSING: ${XRAY_PREPROCESSING:-raw}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-12}
+    volumes:
+      - ./model:/models:ro
+    restart: unless-stopped
