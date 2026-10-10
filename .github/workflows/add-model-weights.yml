@@ -7,6 +7,8 @@ on:
       - ".github/workflows/add-model-weights.yml"
       - "app/model_download.py"
       - "scripts/download_model.py"
+      - "scripts/smoke_test_model.py"
+      - "app/model_service.py"
   workflow_dispatch:
 
 permissions:
