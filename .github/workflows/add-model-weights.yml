@@ -1,0 +1,47 @@
+name: Add verified pretrained model weights
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/add-model-weights.yml"
+      - "app/model_download.py"
+      - "scripts/download_model.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download-and-commit:
+    name: Download, verify, and add MIT model weights
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install downloader dependency
+        run: python -m pip install --disable-pip-version-check "huggingface_hub>=0.34,<1.0"
+
+      - name: Download pinned model and verify SHA-256
+        run: python scripts/download_model.py
+
+      - name: Add verified model to Git
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f model/best_chest_xray_model.h5
+          if git diff --cached --quiet; then
+            echo "The verified model file is already committed and unchanged."
+            exit 0
+          fi
+          git commit -m "Add pinned MIT chest X-ray model weights"
+          git push origin HEAD:main
