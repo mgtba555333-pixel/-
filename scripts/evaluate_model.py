@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 from PIL import Image, UnidentifiedImageError
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, roc_auc_score
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
@@ -52,6 +52,76 @@ def compute_specificity(confusion: np.ndarray, labels: list[str]) -> dict[str, f
         denominator = tn + fp
         result[label] = round(tn / denominator, 6) if denominator else None
     return result
+
+
+def expected_calibration_error(binary_truth: list[int], positive_scores: list[float], bins: int = 10) -> float:
+    truth = np.asarray(binary_truth, dtype=np.int32)
+    scores = np.asarray(positive_scores, dtype=np.float64)
+    if len(truth) == 0:
+        return 0.0
+    ece = 0.0
+    edges = np.linspace(0.0, 1.0, bins + 1)
+    for index in range(bins):
+        lower, upper = edges[index], edges[index + 1]
+        if index == bins - 1:
+            selected = (scores >= lower) & (scores <= upper)
+        else:
+            selected = (scores >= lower) & (scores < upper)
+        if np.any(selected):
+            ece += float(np.mean(selected)) * abs(
+                float(np.mean(scores[selected])) - float(np.mean(truth[selected]))
+            )
+    return ece
+
+
+def bootstrap_confidence_intervals(
+    y_true: list[int],
+    y_pred: list[int],
+    positive_scores: list[float] | None,
+    num_classes: int,
+    resamples: int = 500,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Percentile bootstrap intervals for metrics, with a fixed seed for reproducibility."""
+    actual = np.asarray(y_true, dtype=np.int32)
+    predicted = np.asarray(y_pred, dtype=np.int32)
+    if len(actual) < 2:
+        return {}
+    rng = np.random.default_rng(seed)
+    values: dict[str, list[float]] = {"accuracy": [], "macro_f1": []}
+    if positive_scores is not None:
+        values["roc_auc_pneumonia_vs_normal"] = []
+        scores = np.asarray(positive_scores, dtype=np.float64)
+    labels = list(range(num_classes))
+
+    for _ in range(resamples):
+        sample = rng.integers(0, len(actual), size=len(actual))
+        truth_sample = actual[sample]
+        pred_sample = predicted[sample]
+        values["accuracy"].append(float(accuracy_score(truth_sample, pred_sample)))
+        values["macro_f1"].append(float(
+            f1_score(truth_sample, pred_sample, labels=labels, average="macro", zero_division=0)
+        ))
+        if positive_scores is not None and len(np.unique(truth_sample)) == 2:
+            values["roc_auc_pneumonia_vs_normal"].append(float(
+                roc_auc_score((truth_sample == 1).astype(np.int32), scores[sample])
+            ))
+
+    intervals: dict[str, Any] = {}
+    for metric, samples in values.items():
+        if len(samples) < 25:
+            intervals[metric] = {
+                "lower_95": None,
+                "upper_95": None,
+                "valid_resamples": len(samples),
+            }
+        else:
+            intervals[metric] = {
+                "lower_95": round(float(np.percentile(samples, 2.5)), 6),
+                "upper_95": round(float(np.percentile(samples, 97.5)), 6),
+                "valid_resamples": len(samples),
+            }
+    return intervals
 
 
 def evaluate(dataset_dir: Path, output_path: Path) -> dict[str, Any]:
@@ -105,19 +175,36 @@ def evaluate(dataset_dir: Path, output_path: Path) -> dict[str, Any]:
         "specificity_by_class": compute_specificity(matrix, service.labels),
     }
 
-    # The model scores are not known to be clinically calibrated. AUC measures ranking only.
+    # Scores come from the model head and are not established as calibrated clinical probabilities.
     pneumonia_index = next(
         (i for i, label in enumerate(service.labels) if "PNEUMONIA" in label.upper()),
         None,
     )
+    ci_scores: list[float] | None = None
     if len(service.labels) == 2 and pneumonia_index is not None and len(set(y_true)) == 2:
         binary_truth = [int(value == pneumonia_index) for value in y_true]
         binary_scores = [values[pneumonia_index] for values in scores_by_class]
+        ci_scores = binary_scores
         metrics["roc_auc_pneumonia_vs_normal"] = round(
             float(roc_auc_score(binary_truth, binary_scores)), 6
         )
+        metrics["brier_score_pneumonia"] = round(
+            float(np.mean((np.asarray(binary_scores) - np.asarray(binary_truth)) ** 2)), 6
+        )
+        metrics["expected_calibration_error_10_bins"] = round(
+            expected_calibration_error(binary_truth, binary_scores, bins=10), 6
+        )
     else:
         metrics["roc_auc_pneumonia_vs_normal"] = None
+        metrics["brier_score_pneumonia"] = None
+        metrics["expected_calibration_error_10_bins"] = None
+
+    metrics["confidence_intervals_95_bootstrap"] = bootstrap_confidence_intervals(
+        y_true,
+        y_pred,
+        ci_scores,
+        num_classes=len(service.labels),
+    )
 
     report_data: dict[str, Any] = {
         "title": "PulmoSight AI — research evaluation report",
