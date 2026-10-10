@@ -21,6 +21,7 @@ REQUIRED_FILES = (
     "tests/test_api_safety.py",
     "app/model_download.py",
     "scripts/download_model.py",
+    "scripts/smoke_test_model.py",
 )
 
 
