@@ -13,7 +13,7 @@
 
 ## How PulmoSight obtains the weights
 
-On first start, the backend can download the pinned file from Hugging Face using `huggingface_hub`. Before it loads the model, PulmoSight checks the downloaded file against the SHA-256 above. A mismatched file is not accepted. The H5 file is stored locally in the ignored `model/` directory, not committed to this Git repository.
+On first start, the backend can download the pinned file from Hugging Face using `huggingface_hub`. Before it loads the model, PulmoSight checks the downloaded file against the SHA-256 above. A mismatched file is not accepted. The pinned H5 file is tracked at `model/best_chest_xray_model.h5` after a GitHub Actions workflow verifies its SHA-256. The downloader can restore or re-verify it if it is missing.
 
 Manual download command:
 
@@ -44,7 +44,7 @@ The repository's automated tests currently cover:
 - Metric helper calculations.
 - The API refusing to fabricate a result when the model is unavailable.
 
-End-to-end loading and inference on the downloaded H5 must still be verified in an environment with the model file and compatible TensorFlow installed. Grad-CAM may be unavailable for some Keras model graph layouts; if so, the web app displays that limitation rather than fabricating a heatmap.
+The dedicated model workflow runs a TensorFlow smoke test on a synthetic, non-patient image to verify model loading, the output shape, score conversion, and API inference path. This is a software compatibility check only—not clinical validation. Grad-CAM may be unavailable for some Keras model graph layouts; if so, the web app displays that limitation rather than fabricating a heatmap.
 
 ## Limitations and responsible use
 
