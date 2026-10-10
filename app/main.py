@@ -94,7 +94,7 @@ async def predict(file: UploadFile = File(...)) -> dict:
         )
 
     try:
-        result = await run_in_threadpool(model_service.predict, image)
+        result = await run_in_threadpool(model_service.predict, image, True)
     except ModelUnavailableError as exc:
         raise HTTPException(status_code=503, detail={"code": "model_not_ready", "message": str(exc)})
     except ModelConfigurationError as exc:
