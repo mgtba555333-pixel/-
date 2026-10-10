@@ -5,8 +5,6 @@ services:
     plan: starter
     healthCheckPath: /api/health
     envVars:
-      - key: PORT
-        value: "10000"
       - key: MODEL_AUTO_DOWNLOAD
         value: "false"
       - key: MODEL_PATH
