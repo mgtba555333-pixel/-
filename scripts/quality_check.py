@@ -15,6 +15,8 @@ REQUIRED_FILES = (
     "requirements.txt",
     "Dockerfile",
     "docker-compose.yml",
+    "scripts/evaluate_model.py",
+    "tests/test_preprocessing.py",
 )
 
 
@@ -72,6 +74,17 @@ def main() -> int:
         errors.append("README must include the medical-use disclaimer.")
     if ":root" not in css or "@media" not in css:
         errors.append("Responsive CSS design tokens/media queries are missing.")
+    model_service = (ROOT / "app/model_service.py").read_text(encoding="utf-8")
+    if 'os.getenv("XRAY_PREPROCESSING", "unit")' not in model_service:
+        errors.append("Default model preprocessing should match the inspected training notebook.")
+    if "Image.Resampling.BILINEAR" not in model_service:
+        errors.append("Model image resize should match the direct 180x180 training resize.")
+    if "def _compute_gradcam" not in model_service or 'result["explanation"]' not in model_service:
+        errors.append("Optional Grad-CAM explanation handling is missing.")
+    evaluation = (ROOT / "scripts/evaluate_model.py").read_text(encoding="utf-8")
+    for metric_name in ("accuracy", "specificity_by_class", "macro_f1", "roc_auc_pneumonia_vs_normal"):
+        if metric_name not in evaluation:
+            errors.append("Evaluation metric missing: " + metric_name)
 
     if errors:
         print("\n".join(f"ERROR: {item}" for item in errors))
