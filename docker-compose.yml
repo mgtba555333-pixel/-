@@ -5,9 +5,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MODEL_PATH: /models/xray_model.hdf5
+      MODEL_PATH: /models/best_chest_xray_model.h5
       MODEL_CLASSES_PATH: /models/model_classes.txt
-      XRAY_PREPROCESSING: ${XRAY_PREPROCESSING:-raw}
+      XRAY_PREPROCESSING: ${XRAY_PREPROCESSING:-auto}
+      MODEL_AUTO_DOWNLOAD: ${MODEL_AUTO_DOWNLOAD:-true}
       XRAY_COLOR_ORDER: ${XRAY_COLOR_ORDER:-rgb}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-12}
     volumes:
