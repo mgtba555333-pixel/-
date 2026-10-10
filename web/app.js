@@ -258,7 +258,7 @@
     }
   }
 
-  function renderExplanation(explanation) {
+  function renderExplanation(explanation, inputSize) {
     const section = $("explanationBlock");
     const stage = $("heatmapStage");
     const canvas = $("explanationCanvas");
@@ -284,9 +284,11 @@
 
     const image = new Image();
     image.onload = () => {
-      const naturalWidth = image.naturalWidth || 180;
-      const naturalHeight = image.naturalHeight || 180;
-      const factor = Math.min(1, 900 / naturalWidth, 650 / naturalHeight);
+      // Match the square/stretch resize used by the model, rather than overlaying
+      // a square heatmap onto an aspect-preserved source image.
+      const naturalWidth = Number(inputSize?.width) || rows[0].length;
+      const naturalHeight = Number(inputSize?.height) || rows.length;
+      const factor = Math.min(3, 900 / naturalWidth, 650 / naturalHeight);
       const width = Math.max(1, Math.round(naturalWidth * factor));
       const height = Math.max(1, Math.round(naturalHeight * factor));
       canvas.width = width;
@@ -337,7 +339,7 @@
     $("resultSymbol").style.borderColor = isPneumonia ? "rgba(240,194,125,.25)" : "rgba(106,224,188,.2)";
     setText("resultNotice", data.notice || "مخرج بحثي آلي وليس تشخيصاً طبياً. يجب أن يفسر اختصاصي الأشعة الصورة ضمن السياق السريري.");
     renderBreakdown(data.scores);
-    renderExplanation(data.explanation);
+    renderExplanation(data.explanation, data.input_size);
     const record = {
       id: Date.now(),
       label,
