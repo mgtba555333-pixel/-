@@ -77,6 +77,7 @@ def expected_calibration_error(binary_truth: list[int], positive_scores: list[fl
 def bootstrap_confidence_intervals(
     y_true: list[int],
     y_pred: list[int],
+    positive_truth: list[int] | None,
     positive_scores: list[float] | None,
     num_classes: int,
     resamples: int = 500,
@@ -89,8 +90,9 @@ def bootstrap_confidence_intervals(
         return {}
     rng = np.random.default_rng(seed)
     values: dict[str, list[float]] = {"accuracy": [], "macro_f1": []}
-    if positive_scores is not None:
+    if positive_truth is not None and positive_scores is not None:
         values["roc_auc_pneumonia_vs_normal"] = []
+        binary_actual = np.asarray(positive_truth, dtype=np.int32)
         scores = np.asarray(positive_scores, dtype=np.float64)
     labels = list(range(num_classes))
 
@@ -102,10 +104,12 @@ def bootstrap_confidence_intervals(
         values["macro_f1"].append(float(
             f1_score(truth_sample, pred_sample, labels=labels, average="macro", zero_division=0)
         ))
-        if positive_scores is not None and len(np.unique(truth_sample)) == 2:
-            values["roc_auc_pneumonia_vs_normal"].append(float(
-                roc_auc_score((truth_sample == 1).astype(np.int32), scores[sample])
-            ))
+        if positive_truth is not None and positive_scores is not None:
+            binary_sample = binary_actual[sample]
+            if len(np.unique(binary_sample)) == 2:
+                values["roc_auc_pneumonia_vs_normal"].append(float(
+                    roc_auc_score(binary_sample, scores[sample])
+                ))
 
     intervals: dict[str, Any] = {}
     for metric, samples in values.items():
@@ -180,10 +184,12 @@ def evaluate(dataset_dir: Path, output_path: Path) -> dict[str, Any]:
         (i for i, label in enumerate(service.labels) if "PNEUMONIA" in label.upper()),
         None,
     )
+    ci_truth: list[int] | None = None
     ci_scores: list[float] | None = None
     if len(service.labels) == 2 and pneumonia_index is not None and len(set(y_true)) == 2:
         binary_truth = [int(value == pneumonia_index) for value in y_true]
         binary_scores = [values[pneumonia_index] for values in scores_by_class]
+        ci_truth = binary_truth
         ci_scores = binary_scores
         metrics["roc_auc_pneumonia_vs_normal"] = round(
             float(roc_auc_score(binary_truth, binary_scores)), 6
@@ -202,6 +208,7 @@ def evaluate(dataset_dir: Path, output_path: Path) -> dict[str, Any]:
     metrics["confidence_intervals_95_bootstrap"] = bootstrap_confidence_intervals(
         y_true,
         y_pred,
+        ci_truth,
         ci_scores,
         num_classes=len(service.labels),
     )
