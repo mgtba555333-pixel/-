@@ -82,7 +82,7 @@ Put the two model files in `./model/` first. Docker mounts that directory read-o
 
 ## Privacy
 
-The API processes uploaded images in memory and does not write them to disk. The browser's recent-results list stores summary data only in the current tab session; it does not store image bytes or patient names. Do not upload identifiable patient images to a public or untrusted server.
+The API does not persist uploaded images to an application folder or database; upload handling may buffer data temporarily while the request is processed. The browser's recent-results list stores summary data only in the current tab session; it does not store image bytes or patient names. Do not upload identifiable patient images to a public or untrusted server.
 
 ## Attribution
 
