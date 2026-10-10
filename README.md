@@ -1,69 +1,72 @@
 # PulmoSight AI — Chest X-ray Research Platform
 
-A structured, responsive research web application for reviewing chest X-ray images and connecting a TensorFlow model for **Normal vs Pneumonia** classification.
+An Arabic-first research web app for chest X-ray classification, optional Grad-CAM visualization, and evaluation metrics.
 
-> **Research prototype only.** This software is not a medical device and must not be used to diagnose, triage, or treat patients. A qualified clinician must interpret radiology findings. The UI never fabricates predictions: if the model weights are absent or cannot load, the app clearly reports that analysis is unavailable.
+> **Research prototype only.** Not a medical device. Never use it for diagnosis, triage, or treatment. A qualified clinician must interpret radiology findings. The model described below is a pediatric research model; its author describes a target group of children aged 1–5 years. Do not assume it generalizes to other ages, hospitals, scanners, or acquisition protocols.
 
-## What is included
+## What's included
 
-- Arabic, right-to-left, responsive research dashboard.
-- Image upload with client-side preview, format and size validation.
-- FastAPI backend with health status and a protected image-analysis endpoint.
-- Lazy-compatible TensorFlow/Keras inference wrapper and configurable preprocessing.
-- Local session history containing result summaries only; images are not stored by the application.
-- Docker setup and a clear path to add the model weights separately.
-- Explicit model availability state so the website cannot present a fake result.
+- Responsive Arabic RTL dashboard and image preview.
+- FastAPI API with upload type/size validation.
+- Automatic download of a pinned chest X-ray model to the ignored local `model/` folder.
+- SHA-256 verification before a downloaded model is accepted.
+- Binary sigmoid decoding for the pretrained MobileNetV2 model.
+- Optional Grad-CAM if the loaded Keras architecture exposes a compatible convolution layer.
+- Held-out evaluation report: accuracy, precision, recall, F1, specificity, ROC-AUC, Brier score, ECE, and bootstrap intervals.
+- Unit tests and GitHub Actions quality checks.
+- Model weights are not committed into Git history. They are downloaded locally from the model host and excluded by `.gitignore`.
 
-## Project layout
+## Model source and download
 
-```text
-app/
-  main.py              # FastAPI routes and static site
-  model_service.py     # Model loading, preprocessing and inference
-web/
-  index.html           # Dashboard interface
-  app.css              # Responsive visual system
-  app.js               # Upload, API and interaction logic
-model/                 # Add model files here locally; weights are not committed
-  xray_model.hdf5
-  model_classes.txt
-Dockerfile
-docker-compose.yml
-requirements.txt
-.env.example
+The default checkpoint comes from:
+
+- Model: [ayushirathour/chest-xray-pneumonia-detection](https://huggingface.co/ayushirathour/chest-xray-pneumonia-detection)
+- License metadata: MIT; retain attribution and license notice.
+- Pinned revision: `65ee3acc9ec589cdb0d1b081dd58c31ef9fed675`
+- File: `best_chest_xray_model.h5` (11,376,320 bytes)
+- Expected SHA-256: `7c85dc7a21b465b89d4a67a95d3a30a81e3f9748a1bdf048001521c1daa3f9d6`
+
+The model card describes a MobileNetV2 classifier for pediatric chest radiographs, RGB 224×224 input resized from the source image, input pixel scaling to 0–1, and a single sigmoid output representing the pneumonia score. These are the publisher's implementation notes, not an independent validation by PulmoSight. The publisher reports external evaluation metrics, but PulmoSight has not independently reproduced those metrics. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+At first launch, the backend attempts to download the pinned file and verify the SHA-256. To download it explicitly ahead of time:
+
+```bash
+python scripts/download_model.py
 ```
+
+To force a fresh download:
+
+```bash
+python scripts/download_model.py --force
+```
+
+The downloaded file is saved to `model/best_chest_xray_model.h5`, a local-only folder ignored by Git. A failed or mismatched checksum stops loading rather than accepting an unknown file. The app can still open in setup mode when the download fails, but prediction stays unavailable.
 
 ## Run locally (Python 3.11 recommended)
 
-1. Create a virtual environment and install dependencies:
+1. Clone the repo and create a virtual environment:
 
    ```bash
-   python -m venv .venv
+   git clone https://github.com/mgtba555333-pixel/- pulmosight-ai
+   cd pulmosight-ai
+   py -3.11 -m venv .venv
    # Windows PowerShell:
-   .venv\Scripts\Activate.ps1
+   .\.venv\Scripts\Activate.ps1
    # macOS / Linux:
    source .venv/bin/activate
+   python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-2. Create the model folder and place the model files in it:
-
-   ```text
-   model/xray_model.hdf5
-   model/model_classes.txt
-   ```
-
-   The upstream research project is [inuwamobarak/chest-xray-pneumonia-detection](https://github.com/inuwamobarak/chest-xray-pneumonia-detection). Review its current license and model/data terms before reusing or redistributing its weights. Do not commit large model weights or patient data to this repository.
-
-3. Start the site:
+2. Start the app:
 
    ```bash
    uvicorn app.main:app --reload
    ```
 
-4. Open http://127.0.0.1:8000. API health is available at http://127.0.0.1:8000/api/health and interactive API docs at http://127.0.0.1:8000/api/docs.
+3. Open http://127.0.0.1:8000. Health: http://127.0.0.1:8000/api/health. API docs: http://127.0.0.1:8000/api/docs.
 
-If the model file is not present, the website still runs in setup mode, but the analysis endpoint will return a clear `503 model_not_ready` response instead of inventing a prediction.
+TensorFlow and the checkpoint take disk space; the first startup needs internet access to fetch the model. The checkpoint is stored outside Git, so it is not added to the user's public commit history.
 
 ## Docker
 
@@ -71,22 +74,21 @@ If the model file is not present, the website still runs in setup mode, but the 
 docker compose up --build
 ```
 
-Put the two model files in `./model/` first. Docker mounts that directory read-only into the container.
+The `./model` directory is mounted read/write so the verified model download can persist on the host machine. That folder is ignored by Git. If you need offline deployment, run the model download once before starting Docker and preserve the model file locally.
 
-## Model and evaluation notes
+## Model configuration
 
-- The model is loaded from `MODEL_PATH`; label names are read from `MODEL_CLASSES_PATH`.
-- `XRAY_PREPROCESSING` supports `raw` (0–255 pixel values), `unit` (0–1 scaling), `resnet50`, and `mobilenet_v2` for compatible models. The current upstream model includes its own `Rescaling(1./255)` layer, so use `raw`; the backend rejects double-scaling configurations. `XRAY_COLOR_ORDER` supports `rgb` and `bgr`; the inspected training notebook expects RGB.
-- The original project contains legacy inference code. Validate input dimensions, color channel order, label ordering, calibration, patient-level leakage, sensitivity, specificity, and external generalization before any research claims.
-- Confidence values are model scores, not calibrated probabilities and not a measure of clinical certainty.
+- `MODEL_PATH`: path to the H5 weights; defaults to `./model/best_chest_xray_model.h5`.
+- `MODEL_AUTO_DOWNLOAD=true`: download the pinned checkpoint when the file is missing.
+- `XRAY_PREPROCESSING=auto`: uses the model's internal Rescaling layer when present; for the pinned Hugging Face model, the app follows the model card's external 0–1 scaling.
+- `XRAY_COLOR_ORDER=rgb`: matches the published inference example.
+- The service reads the model's input shape and output shape rather than assuming a two-unit softmax. A one-unit sigmoid output is converted to `NORMAL = 1 - pneumonia_score` and `PNEUMONIA = pneumonia_score`.
 
-## Inference, Grad-CAM, and evaluation
+Do not interpret model scores as calibrated clinical probabilities. Grad-CAM is only a rough visualization of model gradients, not a lesion segmentation or proof of disease.
 
-The inspected upstream notebook uses a 180 × 180 RGB input pipeline, an internal `Rescaling(1./255)` layer, and a two-class softmax output. PulmoSight defaults to direct bilinear resize, RGB channels, and raw 0–255 pixel values so that the model's internal layer performs normalization exactly once. The service rejects `unit` preprocessing if a loaded model already contains a Rescaling layer. The upstream inference script appears to differ from the training pipeline in aspect-ratio handling and channel order, so review `docs/MODEL_CARD.md` before interpreting results.
+## Evaluate on a held-out dataset
 
-When the loaded architecture supports it, the API returns an optional Grad-CAM map from the last Conv2D layer. It is only a visualization of model attention; it is not a lesion segmentation or clinical explanation. If heatmap generation fails, the actual model output is still returned, but no fake heatmap is substituted.
-
-To compute engineering metrics on a **separate held-out dataset** whose folder names match the model classes:
+Use a **separate held-out test dataset** with folders that match model classes:
 
 ```text
 test-data/
@@ -101,14 +103,15 @@ pip install -r requirements-evaluation.txt
 python scripts/evaluate_model.py --dataset ./test-data --output ./reports/evaluation-report.json
 ```
 
-Keep the test set separate from model fitting and threshold selection; check that patients do not appear in both training and test folders. The script writes accuracy, macro precision/recall/F1, class-wise specificity, confusion matrix, classification report and binary ROC-AUC when calculable. These engineering metrics do not establish clinical accuracy or calibrated probabilities.
+Keep this dataset out of training and threshold selection, and avoid patient overlap between train and test data. The report includes class metrics, specificity, confusion matrix, ROC-AUC, Brier score, ECE, and percentile bootstrap intervals. These are engineering metrics, not evidence of clinical utility.
 
-See [the model card](docs/MODEL_CARD.md) and [development roadmap](docs/ROADMAP.md) for limitations and the next phases.
+## Privacy and security
 
-## Privacy
-
-The API does not persist uploaded images to an application folder or database; upload handling may buffer data temporarily while the request is processed. The browser's recent-results list stores summary data only in the current tab session; it does not store image bytes or patient names. Do not upload identifiable patient images to a public or untrusted server.
+- Uploaded images are not written to an app folder or database; request handling may buffer image bytes temporarily in memory.
+- Session history stores result summaries only; it does not store image bytes or patient names.
+- Do not upload identifiable patient images to a public or untrusted server.
+- Before public deployment, add suitable authentication, rate limiting, HTTPS, logs that exclude image contents, and a privacy/retention review.
 
 ## Attribution
 
-This project is inspired by and interoperates with the research implementation linked above. The website and integration code in this repository are a separate development layer. Review upstream licenses before copying code or weights.
+The web application/integration code is separate from the model artifact. The default model is obtained from its model host at a fixed revision with SHA-256 verification. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the license attribution. Check the model card and underlying dataset terms before any redistribution or real-world use.
