@@ -336,6 +336,7 @@
     $("resultSymbol").style.borderColor = isPneumonia ? "rgba(240,194,125,.25)" : "rgba(106,224,188,.2)";
     setText("resultNotice", data.notice || "مخرج بحثي آلي وليس تشخيصاً طبياً. يجب أن يفسر اختصاصي الأشعة الصورة ضمن السياق السريري.");
     renderBreakdown(data.scores);
+    renderExplanation(data.explanation);
     const record = {
       id: Date.now(),
       label,
