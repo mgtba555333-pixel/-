@@ -9,7 +9,7 @@
 - **License metadata shown by model host:** MIT
 - **Author shown on model host:** Ayushi Rathour
 
-The model artifact is downloaded from its hosting repository at the pinned revision and is not committed into PulmoSight's Git history. Review the model host's current model card, terms, and cited dataset licenses before redistributing the artifact or using it outside research/education. The MIT license for the model repository does not validate its accuracy or clinical safety.
+The model artifact is included at `model/best_chest_xray_model.h5` after a GitHub Actions workflow downloads the pinned revision and verifies its SHA-256. Review the model host's current model card, terms, and cited dataset licenses before redistributing the artifact or using it outside research/education. The MIT license for the model repository does not validate its accuracy or clinical safety.
 
 MIT License notice from the source project:
 
