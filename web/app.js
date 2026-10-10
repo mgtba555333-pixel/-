@@ -257,6 +257,72 @@
     }
   }
 
+  function renderExplanation(explanation) {
+    const section = $("explanationBlock");
+    const stage = $("heatmapStage");
+    const canvas = $("explanationCanvas");
+    const caption = $("explanationCaption");
+    section.hidden = false;
+    stage.hidden = true;
+    canvas.width = 1;
+    canvas.height = 1;
+
+    if (!explanation || !explanation.available || !Array.isArray(explanation.heatmap)) {
+      caption.textContent = explanation?.message || "لم يتمكن النموذج من إنشاء خريطة Grad-CAM. لا توجد خريطة مصطنعة.";
+      return;
+    }
+    caption.textContent = (explanation.notice || "توضيح تجريبي.") +
+      " الطبقة: " + (explanation.target_layer || "غير محددة") +
+      ". الألوان تمثل استجابة النموذج ولا تمثل حدود مرض أو تشخيصاً.";
+
+    const rows = explanation.heatmap;
+    if (!rows.length || !Array.isArray(rows[0]) || !rows[0].length || !selectedFile || !objectUrl) {
+      caption.textContent = "الخريطة متاحة من الخادم، لكن تعذر ربطها بمعاينة الصورة الحالية.";
+      return;
+    }
+
+    const image = new Image();
+    image.onload = () => {
+      const naturalWidth = image.naturalWidth || 180;
+      const naturalHeight = image.naturalHeight || 180;
+      const factor = Math.min(1, 900 / naturalWidth, 650 / naturalHeight);
+      const width = Math.max(1, Math.round(naturalWidth * factor));
+      const height = Math.max(1, Math.round(naturalHeight * factor));
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        caption.textContent = "المتصفح لا يدعم عرض خريطة التوضيح.";
+        return;
+      }
+      ctx.drawImage(image, 0, 0, width, height);
+
+      const heat = document.createElement("canvas");
+      heat.width = rows[0].length;
+      heat.height = rows.length;
+      const heatCtx = heat.getContext("2d");
+      if (!heatCtx) return;
+      const pixels = heatCtx.createImageData(heat.width, heat.height);
+      rows.forEach((row, y) => row.forEach((rawValue, x) => {
+        const value = Math.max(0, Math.min(1, Number(rawValue) || 0));
+        const hotness = Math.max(0, (value - 0.18) / 0.82);
+        const offset = (y * heat.width + x) * 4;
+        pixels.data[offset] = 255;
+        pixels.data[offset + 1] = Math.round(215 * value);
+        pixels.data[offset + 2] = Math.round(24 * (1 - value));
+        pixels.data[offset + 3] = Math.round(165 * hotness);
+      }));
+      heatCtx.putImageData(pixels, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(heat, 0, 0, width, height);
+      stage.hidden = false;
+    };
+    image.onerror = () => {
+      caption.textContent = "تعذر عرض الصورة مع خريطة Grad-CAM.";
+    };
+    image.src = objectUrl;
+  }
+
   function renderResult(data) {
     resultEmpty.hidden = true;
     resultContent.hidden = false;
