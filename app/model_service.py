@@ -53,6 +53,10 @@ class ModelService:
             "supported_labels": self.labels if self.ready else ["NORMAL", "PNEUMONIA"],
             "preprocessing": self.preprocessing,
             "color_order": self.color_order,
+            "input_size": (
+                {"width": self._input_size()[0], "height": self._input_size()[1]}
+                if self.ready else None
+            ),
         }
 
     def _read_labels(self) -> list[str]:
