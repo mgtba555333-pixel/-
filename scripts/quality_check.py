@@ -75,7 +75,7 @@ def main() -> int:
     if ":root" not in css or "@media" not in css:
         errors.append("Responsive CSS design tokens/media queries are missing.")
     model_service = (ROOT / "app/model_service.py").read_text(encoding="utf-8")
-    if 'os.getenv("XRAY_PREPROCESSING", "unit")' not in model_service:
+    if 'os.getenv("XRAY_PREPROCESSING", "raw")' not in model_service:
         errors.append("Default model preprocessing should match the inspected training notebook.")
     if "Image.Resampling.BILINEAR" not in model_service:
         errors.append("Model image resize should match the direct 180x180 training resize.")
