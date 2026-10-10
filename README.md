@@ -80,6 +80,31 @@ Put the two model files in `./model/` first. Docker mounts that directory read-o
 - The original project contains legacy inference code. Validate input dimensions, color channel order, label ordering, calibration, patient-level leakage, sensitivity, specificity, and external generalization before any research claims.
 - Confidence values are model scores, not calibrated probabilities and not a measure of clinical certainty.
 
+## Inference, Grad-CAM, and evaluation
+
+The inspected upstream notebook uses a 180 × 180 RGB input pipeline, a `Rescaling(1./255)` layer, and a two-class softmax output. PulmoSight defaults to direct bilinear resize, RGB channels, and `unit` scaling to match that notebook. The upstream inference script appears to differ from its training pipeline, so review `docs/MODEL_CARD.md` before interpreting results.
+
+When the loaded architecture supports it, the API returns an optional Grad-CAM map from the last Conv2D layer. It is only a visualization of model attention; it is not a lesion segmentation or clinical explanation. If heatmap generation fails, the actual model output is still returned, but no fake heatmap is substituted.
+
+To compute engineering metrics on a **separate held-out dataset** whose folder names match the model classes:
+
+```text
+test-data/
+  NORMAL/
+  PNEUMONIA/
+```
+
+Install the optional evaluation dependency and run:
+
+```bash
+pip install -r requirements-evaluation.txt
+python scripts/evaluate_model.py --dataset ./test-data --output ./reports/evaluation-report.json
+```
+
+Keep the test set separate from model fitting and threshold selection; check that patients do not appear in both training and test folders. The script writes accuracy, macro precision/recall/F1, class-wise specificity, confusion matrix, classification report and binary ROC-AUC when calculable. These engineering metrics do not establish clinical accuracy or calibrated probabilities.
+
+See [the model card](docs/MODEL_CARD.md) and [development roadmap](docs/ROADMAP.md) for limitations and the next phases.
+
 ## Privacy
 
 The API does not persist uploaded images to an application folder or database; upload handling may buffer data temporarily while the request is processed. The browser's recent-results list stores summary data only in the current tab session; it does not store image bytes or patient names. Do not upload identifiable patient images to a public or untrusted server.
