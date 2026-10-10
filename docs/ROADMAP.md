@@ -12,16 +12,17 @@
 ## Phase 1 — Reproducible inference
 
 - [ ] Confirm rights and terms for the upstream model weights and dataset.
-- [ ] Inspect the training notebook and record the exact input size, color order, scaling, and class order.
-- [ ] Verify the model's output shape and whether outputs are logits or already normalized.
-- [ ] Add a tiny, non-identifiable public test fixture and an integration test for inference.
-- [ ] Ensure API responses and UI labels match the verified model metadata.
+- [x] Inspect the training notebook and record the input size, color order, internal scaling, and output activation.
+- [x] Validate input/output shapes and preserve already-normalized softmax scores without applying softmax twice.
+- [x] Add unit tests for preprocessing dimensions, color order, raw pixel range, and the default configuration.
+- [x] Ensure API responses and UI labels match configured model metadata.
+- [ ] Obtain model/data license clarity and run end-to-end inference against the exact weights.
 
 ## Phase 2 — Explainability and evaluation
 
-- [ ] Add Grad-CAM only after confirming the correct convolutional layer.
-- [ ] Show heatmaps as model-attention visualizations, never as proof of disease.
-- [ ] Create an evaluation report with sensitivity, specificity, precision, recall, F1, ROC-AUC, calibration, and confidence intervals.
+- [x] Add an optional Grad-CAM implementation that searches for the last Conv2D layer.
+- [x] Show heatmaps explicitly as model-attention visualizations, never as proof of disease.
+- [x] Add a held-out evaluation report with sensitivity/recall, specificity, precision, F1, ROC-AUC, Brier score, ECE, and bootstrap confidence intervals.
 - [ ] Split and report data at patient level to reduce leakage.
 - [ ] Test external generalization and image quality/unsupported-image handling.
 
