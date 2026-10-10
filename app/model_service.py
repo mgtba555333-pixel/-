@@ -26,6 +26,7 @@ class ModelService:
         self.model_path = Path(os.getenv("MODEL_PATH", str(ROOT_DIR / "model" / "xray_model.hdf5")))
         self.labels_path = Path(os.getenv("MODEL_CLASSES_PATH", str(ROOT_DIR / "model" / "model_classes.txt")))
         self.preprocessing = os.getenv("XRAY_PREPROCESSING", "raw").strip().lower()
+        self.color_order = os.getenv("XRAY_COLOR_ORDER", "rgb").strip().lower()
         self.model: Any | None = None
         self.labels: list[str] = []
         self.load_error: str | None = None
@@ -50,6 +51,7 @@ class ModelService:
             "message": "النموذج محمّل وجاهز للاختبار البحثي." if self.ready else self.unavailable_message,
             "supported_labels": self.labels if self.ready else ["NORMAL", "PNEUMONIA"],
             "preprocessing": self.preprocessing,
+            "color_order": self.color_order,
         }
 
     def _read_labels(self) -> list[str]:
@@ -110,6 +112,8 @@ class ModelService:
                 raise ModelConfigurationError(
                     "XRAY_PREPROCESSING يجب أن يكون raw أو unit أو resnet50 أو mobilenet_v2."
                 )
+            if self.color_order not in {"rgb", "bgr"}:
+                raise ModelConfigurationError("XRAY_COLOR_ORDER يجب أن يكون rgb أو bgr.")
             self.model = loaded_model
             self.labels = labels
             self.load_error = None
@@ -147,6 +151,8 @@ class ModelService:
             method=Image.Resampling.LANCZOS,
         )
         pixels = np.asarray(prepared, dtype=np.float32)
+        if self.color_order == "bgr":
+            pixels = pixels[..., ::-1].copy()
 
         # Must match training-time preprocessing; raw is the apparent upstream default.
         if self.preprocessing == "unit":
@@ -189,5 +195,6 @@ class ModelService:
             ],
             "input_size": {"width": width, "height": height},
             "preprocessing": self.preprocessing,
+            "color_order": self.color_order,
             "interpretation": "model_output_score",
         }
