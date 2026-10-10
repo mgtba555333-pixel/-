@@ -455,6 +455,7 @@
     renderHistory();
     resultContent.hidden = true;
     resultEmpty.hidden = false;
+    $("explanationBlock").hidden = true;
     toast("تم مسح السجل", "حُذفت ملخصات النتائج من جلسة المتصفح.");
   });
   document.querySelectorAll("[data-nav]").forEach((link) => {
