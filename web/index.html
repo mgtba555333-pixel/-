@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1322">
+  <meta name="description" content="PulmoSight AI — منصة بحثية منظمة لفحص سير عمل تحليل صور أشعة الصدر بالذكاء الاصطناعي.">
+  <title>PulmoSight AI | منصة أبحاث تصوير الصدر</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="التنقل الرئيسي">
+      <a class="brand" href="#overview" aria-label="PulmoSight الصفحة الرئيسية">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M23.9 10v14.1c-2.2-3.7-4.4-7.7-6.9-8.3-3.6-.8-7.2 5.3-8.3 13.4-1.1 8.4 3 13.3 9.1 11.1 4.5-1.6 6.1-6.4 6.1-12.6V10Z" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/><path d="M24.1 10v14.1c2.2-3.7 4.4-7.7 6.9-8.3 3.6-.8 7.2 5.3 8.3 13.4 1.1 8.4-3 13.3-9.1 11.1-4.5-1.6-6.1-6.4-6.1-12.6V10Z" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/><path d="M24 5v18" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-copy"><strong>PulmoSight</strong><small>AI RESEARCH SUITE</small></span>
+      </a>
+
+      <div class="workspace-label">مساحة العمل <span class="workspace-dot"></span></div>
+      <nav class="nav-list">
+        <a class="nav-item active" href="#overview" data-nav="overview">
+          <span class="nav-icon">⌂</span><span>لوحة التحكم</span><kbd>01</kbd>
+        </a>
+        <a class="nav-item" href="#analysis" data-nav="analysis">
+          <span class="nav-icon">＋</span><span>فحص جديد</span><kbd>02</kbd>
+        </a>
+        <a class="nav-item" href="#history" data-nav="history">
+          <span class="nav-icon">▤</span><span>سجل النتائج</span><kbd>03</kbd>
+        </a>
+        <a class="nav-item" href="#modelInfo" data-nav="modelInfo">
+          <span class="nav-icon">⌘</span><span>حالة النموذج</span><kbd>04</kbd>
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-status">
+          <span class="status-orb" id="sidebarStatusOrb"></span>
+          <div><strong id="sidebarStatusTitle">جاري فحص النظام</strong><small id="sidebarStatusText">التحقق من اتصال التحليل</small></div>
+        </div>
+        <div class="sidebar-note">
+          <span class="note-symbol">ⓘ</span>
+          <p>نسخة بحثية تجريبية، وليست بديلاً عن تقرير اختصاصي الأشعة.</p>
+        </div>
+        <div class="profile-row">
+          <div class="profile-avatar">PS</div>
+          <div class="profile-details"><strong>مساحة البحث</strong><small>Chest X-ray lab</small></div>
+          <span class="profile-menu">•••</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="overview">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>مساحة العمل</span><span class="crumb-separator">/</span><strong>نظرة عامة</strong></div>
+        <div class="topbar-tools">
+          <div class="environment-chip"><span class="mini-green-dot"></span> بيئة بحثية</div>
+          <button class="icon-button" id="refreshStatusBtn" type="button" title="تحديث حالة النظام" aria-label="تحديث حالة النظام">⟳</button>
+          <div class="top-avatar" aria-hidden="true">PS</div>
+        </div>
+      </header>
+
+      <section class="hero-section">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span> منصة تحليل الصور الطبية <span class="eyebrow-en">/ VISION AI</span></div>
+          <h1>رؤية أوضح.<br><span>سير عمل أذكى.</span></h1>
+          <p>مساحة عمل بحثية لتحليل صور أشعة الصدر، ومتابعة مخرجات النموذج، وتنظيم نتائج الاختبارات ضمن واجهة واحدة.</p>
+          <div class="hero-actions">
+            <a href="#analysis" class="button button-primary"><span>＋</span> ابدأ فحصاً جديداً</a>
+            <a href="#modelInfo" class="button button-quiet">استكشف حالة النموذج <span>↙</span></a>
+          </div>
+          <div class="hero-trust-row"><span>●</span> لا يتم إنشاء نتائج افتراضية عند غياب النموذج <i></i> <span class="trust-text-en">MODEL-FIRST WORKFLOW</span></div>
+        </div>
+        <div class="hero-visual" aria-label="رسم توضيحي للرئتين">
+          <div class="visual-glow"></div>
+          <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+          <div class="scan-corner corner-tl"></div><div class="scan-corner corner-tr"></div><div class="scan-corner corner-bl"></div><div class="scan-corner corner-br"></div>
+          <svg class="lung-art" viewBox="0 0 360 360" fill="none" role="img" aria-label="رسم هندسي للرئتين">
+            <defs><linearGradient id="lungStroke" x1="60" y1="40" x2="300" y2="320" gradientUnits="userSpaceOnUse"><stop stop-color="#9FFFE0"/><stop offset="1" stop-color="#55A8C9"/></linearGradient><radialGradient id="lungFill" cx="0" cy="0" r="1" gradientTransform="translate(180 192) rotate(90) scale(150)" gradientUnits="userSpaceOnUse"><stop stop-color="#43D8B0" stop-opacity=".2"/><stop offset="1" stop-color="#4DA8D0" stop-opacity=".01"/></radialGradient></defs>
+            <circle cx="180" cy="180" r="135" fill="url(#lungFill)"/>
+            <path d="M180 49v102m0-61-18 31m18-14 19 30m-19-17-29 22m29-1 28 18" stroke="url(#lungStroke)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M151 124c-20-26-37-7-48 11-22 35-39 77-30 113 5 21 25 34 48 30 30-5 47-37 51-73 3-28-1-57-21-81Z" fill="#4ECDB1" fill-opacity=".13" stroke="url(#lungStroke)" stroke-width="3"/>
+            <path d="M208 124c20-26 37-7 48 11 22 35 39 77 30 113-5 21-25 34-48 30-30-5-47-37-51-73-3-28 1-57 21-81Z" fill="#4AAACB" fill-opacity=".14" stroke="url(#lungStroke)" stroke-width="3"/>
+            <path d="m180 151-23 23m23-7 22 21m-22-2-26 25m26-3 22 27m-22-21-3 36m3-36 22-28m-22 7 16-20m-39-6-14-21m14 21-2 25m28 8 21-9m-48 36 8 20m-8-20-20 7" stroke="#86F3D2" stroke-width="2.4" stroke-linecap="round" opacity=".8"/>
+            <circle cx="180" cy="151" r="5" fill="#9FFFE0"/><circle cx="156" cy="174" r="3.5" fill="#9FFFE0"/><circle cx="202" cy="188" r="3.5" fill="#9FFFE0"/>
+          </svg>
+          <div class="visual-label label-left"><span class="label-pulse"></span><div><strong>CHEST VISION</strong><small>Imaging workflow</small></div></div>
+          <div class="visual-label label-right"><strong>01</strong><small>MODEL PIPELINE</small></div>
+          <div class="visual-footer"><span>01 / XRAY ANALYSIS</span><span>RESEARCH INTERFACE <b>↗</b></span></div>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="ملخص النظام">
+        <article class="metric-card">
+          <div class="metric-top"><span>جاهزية النموذج</span><span class="metric-icon mint">◈</span></div>
+          <div class="metric-value" id="metricModelStatus">قيد التحقق</div>
+          <div class="metric-foot"><span class="metric-indicator" id="metricModelDot"></span><span id="metricModelFoot">جارٍ فحص ملفات النموذج</span></div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top"><span>الفئات المدعومة</span><span class="metric-icon blue">⌁</span></div>
+          <div class="metric-value" id="metricClassCount">02 <small>فئات</small></div>
+          <div class="metric-foot"><span class="foot-neutral">NORMAL / PNEUMONIA</span></div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top"><span>فحوصات هذه الجلسة</span><span class="metric-icon violet">▤</span></div>
+          <div class="metric-value" id="metricScanCount">00</div>
+          <div class="metric-foot"><span class="foot-neutral">النتائج الحقيقية المكتملة فقط</span></div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-top"><span>حالة واجهة API</span><span class="metric-icon amber">⌘</span></div>
+          <div class="metric-value" id="metricApiStatus">تتحقق...</div>
+          <div class="metric-foot"><span class="metric-indicator" id="metricApiDot"></span><span id="metricApiFoot">اتصال الخادم</span></div>
+        </article>
+      </section>
+
+      <div class="section-heading">
+        <div><span class="section-kicker">WORKSPACE</span><h2>مساحة الفحص</h2><p>ارفع صورة أشعة صالحة، ثم أرسلها للنموذج عند جاهزيته.</p></div>
+        <div class="privacy-badge"><span>⌑</span> معالجة الصورة في الذاكرة</div>
+      </div>
+
+      <section class="workspace-grid">
+        <article class="panel upload-panel" id="analysis">
+          <div class="panel-heading">
+            <div class="panel-heading-icon">＋</div>
+            <div><h3>إضافة صورة أشعة</h3><p>Chest X-ray · PNG / JPG / JPEG</p></div>
+            <span class="step-badge">STEP 01</span>
+          </div>
+          <input id="fileInput" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+          <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="اختيار صورة أشعة من الجهاز">
+            <div class="upload-icon">
+              <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 31V10m0 0-8 8m8-8 8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 27v8a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4v-8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </div>
+            <h4>اسحب صورة الأشعة وأفلتها هنا</h4>
+            <p>أو اختر ملفاً من جهازك لتحضيره للتحليل</p>
+            <button class="button button-outline" id="browseBtn" type="button">تصفح الملفات <span>↗</span></button>
+            <div class="upload-formats"><span>PNG</span><span>JPG</span><span>JPEG</span><i></i><span>حتى 12 MB</span></div>
+          </div>
+          <div class="preview-card" id="previewCard" hidden>
+            <div class="preview-image-wrap"><img id="previewImage" alt="معاينة صورة أشعة الصدر المختارة"><span class="preview-overlay">PREVIEW</span></div>
+            <div class="preview-meta"><span class="file-check">✓</span><div class="preview-copy"><strong id="previewName">xray-image.jpg</strong><small id="previewInfo">جاري تجهيز الصورة...</small></div><button id="removeFileBtn" class="remove-file" type="button" aria-label="إزالة الصورة">×</button></div>
+          </div>
+          <div class="upload-warning" id="uploadWarning" role="alert" hidden></div>
+          <div class="action-row">
+            <div class="action-explainer"><span class="small-lock">⌑</span><span>لا نحفظ ملف الصورة على الخادم</span></div>
+            <button class="button button-primary analyze-button" id="analyzeBtn" type="button" disabled><span class="analyze-icon">✳</span> تحليل الصورة <span class="button-arrow">←</span></button>
+          </div>
+          <p class="action-hint" id="actionHint">اختر صورة أولاً. يتطلب التحليل ربط ملف النموذج الصحيح.</p>
+        </article>
+
+        <aside class="panel model-panel" id="modelInfo">
+          <div class="panel-heading">
+            <div class="panel-heading-icon cyan">◈</div>
+            <div><h3>مراقبة النموذج</h3><p>Model readiness monitor</p></div>
+            <span class="live-pill"><i></i> LIVE</span>
+          </div>
+          <div class="model-status-card" id="modelStatusCard">
+            <div class="status-card-top"><div class="status-ring" id="modelRing"><span>!</span></div><div><strong id="modelStateTitle">النموذج غير محمّل</strong><small id="modelStateSubtitle">Model setup required</small></div></div>
+            <p id="modelStateMessage">أضف ملف الأوزان إلى مجلد model حتى يتمكن الخادم من تنفيذ التحليل.</p>
+          </div>
+          <div class="model-details">
+            <div><span>نوع المهمة</span><strong>تصنيف صورة</strong></div>
+            <div><span>المخرجات المتوقعة</span><strong>Normal / Pneumonia</strong></div>
+            <div><span>حد حجم الصورة</span><strong id="modelMaxSize">12 MB</strong></div>
+            <div><span>المعالجة الحالية</span><strong class="code-value" id="modelPreprocessing">raw</strong></div>
+          </div>
+          <button class="button button-secondary full-width" id="refreshModelBtn" type="button"><span>⟳</span> تحديث حالة النموذج</button>
+          <div class="model-integrity-note"><span>ⓘ</span><p>درجة النموذج ليست تشخيصاً ولا احتمالاً سريرياً معايراً. يجب التحقق من توافق المعالجة مع التدريب.</p></div>
+        </aside>
+      </section>
+
+      <section class="panel results-panel" id="results">
+        <div class="panel-heading">
+          <div class="panel-heading-icon purple">◉</div>
+          <div><h3>نتيجة التحليل</h3><p>Analysis output · لا تظهر نتائج إلا من النموذج الفعلي</p></div>
+          <span class="step-badge">STEP 02</span>
+        </div>
+        <div class="result-empty" id="resultEmpty">
+          <div class="result-empty-art"><div class="result-empty-circle">◉</div><span class="result-dash dash-one"></span><span class="result-dash dash-two"></span><span class="result-dash dash-three"></span></div>
+          <h4>بانتظار أول نتيجة</h4>
+          <p>ستظهر الفئة المتوقعة ودرجات مخرجات النموذج هنا بعد نجاح التحليل.</p>
+        </div>
+        <div class="result-content" id="resultContent" hidden>
+          <div class="result-summary">
+            <div class="result-symbol" id="resultSymbol">✓</div>
+            <div class="result-labels"><span class="result-overline">MODEL OUTPUT</span><h4 id="resultLabel">—</h4><p id="resultTime">—</p></div>
+            <div class="result-score"><span>درجة المخرج الأعلى</span><strong id="resultScore">—</strong><small>ليست دقة تشخيصية سريرية</small></div>
+          </div>
+          <div class="score-breakdown" id="scoreBreakdown"></div>
+          <div class="result-disclaimer"><span>ⓘ</span><p id="resultNotice">نتيجة بحثية آلية. يجب أن يفسر اختصاصي الأشعة الصورة والنتيجة ضمن السياق السريري.</p></div>
+        </div>
+      </section>
+
+      <section class="panel history-panel" id="history">
+        <div class="panel-heading history-heading">
+          <div class="panel-heading-icon blue">▤</div>
+          <div><h3>آخر النتائج في هذه الجلسة</h3><p>لا يتم تخزين الصور أو أسماء المرضى</p></div>
+          <span class="history-count" id="historyCount">0 نتائج</span>
+        </div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead><tr><th>رقم الفحص</th><th>الفئة الناتجة</th><th>درجة المخرج</th><th>وقت التحليل</th><th>الحالة</th></tr></thead>
+            <tbody id="historyBody"><tr class="history-empty-row"><td colspan="5"><span>▤</span> لا توجد نتائج مكتملة في هذه الجلسة بعد.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="history-footer"><span><i></i> يتم تحديث السجل بعد استجابة حقيقية من النموذج فقط.</span><button id="clearHistoryBtn" class="text-button" type="button">مسح سجل الجلسة</button></div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="footer-brand"><span class="footer-brand-mark">P</span><strong>PulmoSight AI</strong><span>v0.1 Research Preview</span></div>
+        <p>للبحث والتعليم فقط. لا تستخدم المنصة لاتخاذ قرارات تشخيص أو علاج.</p>
+        <a href="https://github.com/inuwamobarak/chest-xray-pneumonia-detection" target="_blank" rel="noreferrer">المشروع البحثي المرجعي ↗</a>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
