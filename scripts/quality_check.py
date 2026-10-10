@@ -19,6 +19,8 @@ REQUIRED_FILES = (
     "tests/test_preprocessing.py",
     "tests/test_evaluation_metrics.py",
     "tests/test_api_safety.py",
+    "app/model_download.py",
+    "scripts/download_model.py",
 )
 
 
@@ -77,12 +79,17 @@ def main() -> int:
     if ":root" not in css or "@media" not in css:
         errors.append("Responsive CSS design tokens/media queries are missing.")
     model_service = (ROOT / "app/model_service.py").read_text(encoding="utf-8")
-    if 'os.getenv("XRAY_PREPROCESSING", "raw")' not in model_service:
-        errors.append("Default model preprocessing should match the inspected training notebook.")
+    if 'os.getenv("XRAY_PREPROCESSING", "auto")' not in model_service:
+        errors.append("Model preprocessing should be selected from model metadata or explicit configuration.")
     if "Image.Resampling.BILINEAR" not in model_service:
         errors.append("Model image resize should match the direct 180x180 training resize.")
     if "def _compute_gradcam" not in model_service or 'result["explanation"]' not in model_service:
         errors.append("Optional Grad-CAM explanation handling is missing.")
+    downloader = (ROOT / "app/model_download.py").read_text(encoding="utf-8")
+    if "MODEL_SHA256" not in downloader or "download_verified_model" not in downloader:
+        errors.append("Pinned model downloader and SHA-256 verification are required.")
+    if "huggingface_hub" not in (ROOT / "requirements.txt").read_text(encoding="utf-8"):
+        errors.append("Hugging Face downloader dependency is missing.")
     evaluation = (ROOT / "scripts/evaluate_model.py").read_text(encoding="utf-8")
     for metric_name in ("accuracy", "specificity_by_class", "macro_f1", "roc_auc_pneumonia_vs_normal"):
         if metric_name not in evaluation:
