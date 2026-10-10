@@ -44,7 +44,7 @@ The repository's automated tests currently cover:
 - Metric helper calculations.
 - The API refusing to fabricate a result when the model is unavailable.
 
-The dedicated model workflow runs a TensorFlow smoke test on a synthetic, non-patient image to verify model loading, the output shape, score conversion, and API inference path. This is a software compatibility check only—not clinical validation. Grad-CAM may be unavailable for some Keras model graph layouts; if so, the web app displays that limitation rather than fabricating a heatmap.
+The dedicated model workflow successfully ran a TensorFlow smoke test on a synthetic, non-patient image, verified the output shape and score conversion, and generated a Grad-CAM map for the pinned MobileNetV2 model. This is a software compatibility check only—not clinical validation. Grad-CAM may still be unavailable for other Keras model graph layouts; in that case, the app reports the limitation rather than fabricating a heatmap.
 
 ## Limitations and responsible use
 
