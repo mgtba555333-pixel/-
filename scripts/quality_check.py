@@ -82,7 +82,7 @@ def main() -> int:
     if 'os.getenv("XRAY_PREPROCESSING", "auto")' not in model_service:
         errors.append("Model preprocessing should be selected from model metadata or explicit configuration.")
     if "Image.Resampling.BILINEAR" not in model_service:
-        errors.append("Model image resize should match the direct 180x180 training resize.")
+        errors.append("Model image resizing must use the loaded input dimensions.")
     if "def _compute_gradcam" not in model_service or 'result["explanation"]' not in model_service:
         errors.append("Optional Grad-CAM explanation handling is missing.")
     downloader = (ROOT / "app/model_download.py").read_text(encoding="utf-8")
