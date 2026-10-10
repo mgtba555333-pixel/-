@@ -28,7 +28,7 @@ The default checkpoint comes from:
 
 The model card describes a MobileNetV2 classifier for pediatric chest radiographs, RGB 224×224 input resized from the source image, input pixel scaling to 0–1, and a single sigmoid output representing the pneumonia score. These are the publisher's implementation notes, not an independent validation by PulmoSight. The publisher reports external evaluation metrics, but PulmoSight has not independently reproduced those metrics. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-At first launch, the backend attempts to download the pinned file and verify the SHA-256. To download it explicitly ahead of time:
+At first launch, the backend verifies the committed model's SHA-256 before loading it. If the file is absent, it attempts to download the same pinned revision and verify the checksum. To download/repair it explicitly:
 
 ```bash
 python scripts/download_model.py
@@ -40,7 +40,7 @@ To force a fresh download:
 python scripts/download_model.py --force
 ```
 
-The downloaded file is saved to `model/best_chest_xray_model.h5`, a local-only folder ignored by Git. A failed or mismatched checksum stops loading rather than accepting an unknown file. The app can still open in setup mode when the download fails, but prediction stays unavailable.
+The file is saved at `model/best_chest_xray_model.h5`. The weight is versioned by the dedicated workflow only after a checksum check; other locally downloaded model files remain ignored by Git. A failed or mismatched checksum stops loading rather than accepting an unknown file. The app can still open in setup mode when the download fails, but prediction stays unavailable.
 
 ## Run locally (Python 3.11 recommended)
 
@@ -74,7 +74,7 @@ TensorFlow and the checkpoint take disk space; the first startup needs internet 
 docker compose up --build
 ```
 
-The `./model` directory is mounted read/write so the verified model download can persist on the host machine. That folder is ignored by Git. If you need offline deployment, run the model download once before starting Docker and preserve the model file locally.
+The `./model` directory is mounted read/write so the verified model file can be loaded or repaired on the host machine. The pinned H5 is included in Git; other local model files are ignored. If you need offline deployment, keep the verified model file available before starting Docker.
 
 ## Model configuration
 
