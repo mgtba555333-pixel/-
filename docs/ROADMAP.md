@@ -11,12 +11,14 @@
 
 ## Phase 1 — Reproducible inference
 
-- [ ] Confirm rights and terms for the upstream model weights and dataset.
-- [x] Inspect the training notebook and record the input size, color order, internal scaling, and output activation.
+- [x] Select a pretrained model whose Hugging Face repository advertises an MIT license and document attribution.
+- [x] Add a pinned downloader with a fixed revision and SHA-256 verification; keep weights out of Git history.
+- [x] Support binary sigmoid model outputs and load the model input dimensions dynamically.
+- [x] Inspect the selected model card and implement its documented 224×224 RGB input and 0–1 scaling.
 - [x] Validate input/output shapes and preserve already-normalized softmax scores without applying softmax twice.
 - [x] Add unit tests for preprocessing dimensions, color order, raw pixel range, and the default configuration.
 - [x] Ensure API responses and UI labels match configured model metadata.
-- [ ] Obtain model/data license clarity and run end-to-end inference against the exact weights.
+- [ ] Download the model in a runtime environment, load the H5 file with TensorFlow 2.19, and verify end-to-end inference against authorized held-out images.
 
 ## Phase 2 — Explainability and evaluation
 
