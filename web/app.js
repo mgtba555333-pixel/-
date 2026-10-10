@@ -180,6 +180,17 @@
       setStatusDot("metricModelDot", modelReady ? "ready" : "error");
       setText("metricClassCount", String((data.supported_labels || []).length).padStart(2, "0") + " فئات");
       setText("modelMaxSize", MAX_MB + " MB");
+      const sourceLink = $("modelSourceLink");
+      if (data.model_ready && data.model_source === "huggingface" && data.model_license_url) {
+        sourceLink.href = data.model_license_url;
+        sourceLink.textContent = "Hugging Face · MIT";
+      } else if (data.model_ready) {
+        sourceLink.removeAttribute("href");
+        sourceLink.textContent = "ملف محلي";
+      } else {
+        sourceLink.removeAttribute("href");
+        sourceLink.textContent = "بانتظار النموذج";
+      }
       const formatLimit = document.querySelector(".upload-formats span:last-child");
       if (formatLimit) formatLimit.textContent = "حتى " + MAX_MB + " MB";
       setText("modelInputSize", data.input_size ? String(data.input_size.width) + " × " + String(data.input_size.height) : "—");
