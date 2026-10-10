@@ -8,13 +8,13 @@ An Arabic-first research web app for chest X-ray classification, optional Grad-C
 
 - Responsive Arabic RTL dashboard and image preview.
 - FastAPI API with upload type/size validation.
-- Automatic download of a pinned chest X-ray model to the ignored local `model/` folder.
+- Pinned chest X-ray model included in `model/` after SHA-256 verification; the downloader restores it if missing.
 - SHA-256 verification before a downloaded model is accepted.
 - Binary sigmoid decoding for the pretrained MobileNetV2 model.
 - Optional Grad-CAM if the loaded Keras architecture exposes a compatible convolution layer.
 - Held-out evaluation report: accuracy, precision, recall, F1, specificity, ROC-AUC, Brier score, ECE, and bootstrap intervals.
 - Unit tests and GitHub Actions quality checks.
-- Model weights are not committed into Git history. They are downloaded locally from the model host, SHA-256 verified, and excluded by `.gitignore`.
+- The pinned H5 weights are committed at `model/best_chest_xray_model.h5`; a dedicated GitHub Actions workflow verifies SHA-256 before adding or updating the file.
 
 ## Model source and download
 
@@ -40,7 +40,7 @@ To force a fresh download:
 python scripts/download_model.py --force
 ```
 
-The file is saved at `model/best_chest_xray_model.h5`. The weight is versioned by the dedicated workflow only after a checksum check; other locally downloaded model files remain ignored by Git. A failed or mismatched checksum stops loading rather than accepting an unknown file. The app can still open in setup mode when the download fails, but prediction stays unavailable.
+The file lives at `model/best_chest_xray_model.h5`. The dedicated workflow versions it only after a checksum check; other local model files remain ignored by Git. A failed or mismatched checksum stops loading rather than accepting an unknown file. The app can still open in setup mode when the download fails, but prediction stays unavailable.
 
 ## Run locally (Python 3.11 recommended)
 
@@ -66,7 +66,7 @@ The file is saved at `model/best_chest_xray_model.h5`. The weight is versioned b
 
 3. Open http://127.0.0.1:8000. Health: http://127.0.0.1:8000/api/health. API docs: http://127.0.0.1:8000/api/docs.
 
-TensorFlow and the checkpoint take disk space; the first startup needs internet access to fetch the model. The checkpoint is stored outside Git, so it is not added to the user's public commit history.
+TensorFlow requires disk space. The pinned checkpoint is included in the repository. If it is removed or fails checksum verification, restoring it requires internet access to the pinned Hugging Face revision.
 
 ## Docker
 
