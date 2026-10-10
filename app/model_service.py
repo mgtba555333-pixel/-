@@ -26,7 +26,7 @@ class ModelService:
         self.model_path = Path(os.getenv("MODEL_PATH", str(ROOT_DIR / "model" / "xray_model.hdf5")))
         self.labels_path = Path(os.getenv("MODEL_CLASSES_PATH", str(ROOT_DIR / "model" / "model_classes.txt")))
         # The upstream notebook uses Rescaling(1./255) as its first model layer.
-        self.preprocessing = os.getenv("XRAY_PREPROCESSING", "unit").strip().lower()
+        self.preprocessing = os.getenv("XRAY_PREPROCESSING", "raw").strip().lower()
         self.color_order = os.getenv("XRAY_COLOR_ORDER", "rgb").strip().lower()
         self.model: Any | None = None
         self.labels: list[str] = []
@@ -114,6 +114,14 @@ class ModelService:
             if self.preprocessing not in {"raw", "unit", "resnet50", "mobilenet_v2"}:
                 raise ModelConfigurationError(
                     "XRAY_PREPROCESSING يجب أن يكون raw أو unit أو resnet50 أو mobilenet_v2."
+                )
+            has_internal_rescaling = any(
+                isinstance(layer, tf.keras.layers.Rescaling) for layer in loaded_model.layers
+            )
+            if has_internal_rescaling and self.preprocessing != "raw":
+                raise ModelConfigurationError(
+                    "النموذج يحتوي على طبقة Rescaling داخلية؛ اضبط XRAY_PREPROCESSING=raw "
+                    "حتى لا تتم قسمة قيم البكسل مرتين."
                 )
             if self.color_order not in {"rgb", "bgr"}:
                 raise ModelConfigurationError("XRAY_COLOR_ORDER يجب أن يكون rgb أو bgr.")
