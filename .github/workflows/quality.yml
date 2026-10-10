@@ -1,0 +1,36 @@
+name: PulmoSight quality checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Static and interface checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Compile Python modules
+        run: python -m py_compile app/main.py app/model_service.py app/__init__.py scripts/quality_check.py
+
+      - name: Check JavaScript syntax
+        run: node --check web/app.js
+
+      - name: Check site structure and safety guardrails
+        run: python scripts/quality_check.py
