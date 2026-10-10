@@ -33,6 +33,12 @@ jobs:
       - name: Download pinned model and verify SHA-256
         run: python scripts/download_model.py
 
+      - name: Install TensorFlow runtime for model smoke test
+        run: python -m pip install --disable-pip-version-check "tensorflow-cpu==2.19.0" "numpy>=1.26,<2" "Pillow>=10.2,<12" "huggingface_hub>=0.34,<1.0"
+
+      - name: Load weights and run synthetic-input smoke test
+        run: python scripts/smoke_test_model.py
+
       - name: Add verified model to Git
         shell: bash
         run: |
