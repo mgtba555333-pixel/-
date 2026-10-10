@@ -7,7 +7,7 @@ from unittest.mock import patch
 import numpy as np
 from PIL import Image
 
-from app.model_service import ModelService
+from app.model_service import ModelService, decode_scores
 
 
 class DummyModel:
@@ -19,8 +19,18 @@ class PreprocessingTests(unittest.TestCase):
     def test_default_matches_model_internal_rescaling(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             service = ModelService()
-        self.assertEqual(service.preprocessing, "raw")
+        self.assertEqual(service.preprocessing, "auto")
         self.assertEqual(service.color_order, "rgb")
+
+    def test_binary_sigmoid_score_maps_to_normal_and_pneumonia(self) -> None:
+        labels, scores = decode_scores([0.75], "binary_sigmoid", ["NORMAL", "PNEUMONIA"])
+        self.assertEqual(labels, ["NORMAL", "PNEUMONIA"])
+        np.testing.assert_allclose(scores, [0.25, 0.75], atol=1e-8)
+
+    def test_multiclass_softmax_is_not_applied_twice(self) -> None:
+        labels, scores = decode_scores([0.2, 0.8], "multiclass", ["NORMAL", "PNEUMONIA"])
+        self.assertEqual(labels, ["NORMAL", "PNEUMONIA"])
+        np.testing.assert_allclose(scores, [0.2, 0.8], atol=1e-8)
 
     def make_service(self, preprocessing: str = "unit", color_order: str = "rgb") -> ModelService:
         service = ModelService()
