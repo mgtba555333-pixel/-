@@ -180,6 +180,8 @@
       setStatusDot("metricModelDot", modelReady ? "ready" : "error");
       setText("metricClassCount", String((data.supported_labels || []).length).padStart(2, "0") + " فئات");
       setText("modelMaxSize", MAX_MB + " MB");
+      const formatLimit = document.querySelector(".upload-formats span:last-child");
+      if (formatLimit) formatLimit.textContent = "حتى " + MAX_MB + " MB";
       setText("modelInputSize", data.input_size ? String(data.input_size.width) + " × " + String(data.input_size.height) : "—");
       setText("modelPreprocessing", (data.preprocessing || "raw") + " · " + (data.color_order || "rgb").toUpperCase());
       setText("modelStateTitle", modelReady ? "النموذج جاهز" : "النموذج غير محمّل");
