@@ -76,7 +76,7 @@ Put the two model files in `./model/` first. Docker mounts that directory read-o
 ## Model and evaluation notes
 
 - The model is loaded from `MODEL_PATH`; label names are read from `MODEL_CLASSES_PATH`.
-- `XRAY_PREPROCESSING` supports `raw` (the upstream inference script's apparent raw 0–255 input), `unit` (0–1 scaling), `resnet50`, and `mobilenet_v2`. **This must be matched to the exact preprocessing used during training before interpreting outputs.**
+- `XRAY_PREPROCESSING` supports `raw` (0–255 pixel values), `unit` (0–1 scaling), `resnet50`, and `mobilenet_v2`. `XRAY_COLOR_ORDER` supports `rgb` and `bgr`. **Match both settings to the exact training pipeline before interpreting outputs.**
 - The original project contains legacy inference code. Validate input dimensions, color channel order, label ordering, calibration, patient-level leakage, sensitivity, specificity, and external generalization before any research claims.
 - Confidence values are model scores, not calibrated probabilities and not a measure of clinical certainty.
 
