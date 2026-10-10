@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -25,7 +25,8 @@ class ModelService:
     def __init__(self) -> None:
         self.model_path = Path(os.getenv("MODEL_PATH", str(ROOT_DIR / "model" / "xray_model.hdf5")))
         self.labels_path = Path(os.getenv("MODEL_CLASSES_PATH", str(ROOT_DIR / "model" / "model_classes.txt")))
-        self.preprocessing = os.getenv("XRAY_PREPROCESSING", "raw").strip().lower()
+        # The upstream notebook uses Rescaling(1./255) as its first model layer.
+        self.preprocessing = os.getenv("XRAY_PREPROCESSING", "unit").strip().lower()
         self.color_order = os.getenv("XRAY_COLOR_ORDER", "rgb").strip().lower()
         self.model: Any | None = None
         self.labels: list[str] = []
@@ -56,8 +57,6 @@ class ModelService:
 
     def _read_labels(self) -> list[str]:
         if not self.labels_path.is_file():
-            # These are the two labels documented by the upstream prototype.
-            # A real model output must still have the same number/order of classes.
             return ["NORMAL", "PNEUMONIA"]
 
         labels: list[str] = []
@@ -89,7 +88,7 @@ class ModelService:
             return False
 
         try:
-            import tensorflow as tf  # Imported only when model weights are present.
+            import tensorflow as tf
 
             loaded_model = tf.keras.models.load_model(str(self.model_path), compile=False)
             labels = self._read_labels()
@@ -114,6 +113,15 @@ class ModelService:
                 )
             if self.color_order not in {"rgb", "bgr"}:
                 raise ModelConfigurationError("XRAY_COLOR_ORDER يجب أن يكون rgb أو bgr.")
+            input_shape = loaded_model.input_shape
+            if isinstance(input_shape, list):
+                if len(input_shape) != 1:
+                    raise ModelConfigurationError("النموذج متعدد المدخلات؛ يلزم تحديد مدخل الصورة.")
+                input_shape = input_shape[0]
+            if not input_shape or len(input_shape) != 4 or input_shape[-1] not in (None, 3):
+                raise ModelConfigurationError(
+                    "هذا التكامل يتوقع مدخلاً واحداً لصور RGB بالشكل (batch, height, width, 3)."
+                )
             self.model = loaded_model
             self.labels = labels
             self.load_error = None
@@ -134,27 +142,24 @@ class ModelService:
         shape = self.model.input_shape
         if isinstance(shape, list):
             shape = shape[0]
-        if not shape or len(shape) < 3:
-            return (180, 180)
-        height = int(shape[1]) if shape[1] else 180
-        width = int(shape[2]) if shape[2] else 180
+        height = int(shape[1]) if shape and shape[1] else 180
+        width = int(shape[2]) if shape and shape[2] else 180
         return width, height
 
-    def predict(self, image: Image.Image) -> dict[str, Any]:
-        if not self.ready or self.model is None:
+    def _prepare_input(self, image: Image.Image) -> np.ndarray:
+        """Prepare input to match the model notebook: RGB, direct resize, then scaling."""
+        if self.model is None:
             raise ModelUnavailableError(self.unavailable_message)
-
         width, height = self._input_size()
-        prepared = ImageOps.fit(
-            image.convert("RGB"),
+        prepared = image.convert("RGB").resize(
             (width, height),
-            method=Image.Resampling.LANCZOS,
+            resample=Image.Resampling.BILINEAR,
         )
         pixels = np.asarray(prepared, dtype=np.float32)
+
         if self.color_order == "bgr":
             pixels = pixels[..., ::-1].copy()
 
-        # Must match training-time preprocessing; raw is the apparent upstream default.
         if self.preprocessing == "unit":
             pixels = pixels / 255.0
         elif self.preprocessing == "resnet50":
@@ -163,9 +168,66 @@ class ModelService:
         elif self.preprocessing == "mobilenet_v2":
             import tensorflow as tf
             pixels = tf.keras.applications.mobilenet_v2.preprocess_input(pixels)
+        elif self.preprocessing != "raw":
+            raise ModelConfigurationError("إعداد معالجة الصورة غير صالح.")
 
+        return np.expand_dims(pixels, axis=0)
+
+    def _compute_gradcam(self, batch: np.ndarray, class_index: int) -> dict[str, Any]:
+        """Return normalized Grad-CAM values; this is attention visualization, not segmentation."""
+        if self.model is None:
+            raise ModelUnavailableError(self.unavailable_message)
+
+        import tensorflow as tf
+
+        conv_layer = next(
+            (layer for layer in reversed(self.model.layers) if isinstance(layer, tf.keras.layers.Conv2D)),
+            None,
+        )
+        if conv_layer is None:
+            raise ModelConfigurationError("لم يتم العثور على طبقة Conv2D مناسبة لإنشاء Grad-CAM.")
+
+        grad_model = tf.keras.Model(
+            inputs=self.model.inputs,
+            outputs=[conv_layer.output, self.model.output],
+        )
         with self._lock:
-            raw = self.model.predict(np.expand_dims(pixels, axis=0), verbose=0)
+            with tf.GradientTape() as tape:
+                conv_outputs, predictions = grad_model(batch, training=False)
+                class_score = predictions[:, class_index]
+            gradients = tape.gradient(class_score, conv_outputs)
+
+        if gradients is None:
+            raise ModelConfigurationError("تعذر حساب التدرجات لطبقة الالتفاف المختارة.")
+
+        weights = tf.reduce_mean(gradients, axis=(0, 1, 2))
+        activations = conv_outputs[0]
+        heatmap = tf.reduce_sum(activations * weights, axis=-1)
+        heatmap = tf.maximum(heatmap, 0)
+        max_value = tf.reduce_max(heatmap)
+        heatmap = tf.where(max_value > 0, heatmap / (max_value + tf.keras.backend.epsilon()), heatmap)
+        values = np.asarray(heatmap.numpy(), dtype=np.float32)
+
+        if not np.isfinite(values).all() or float(values.max(initial=0.0)) <= 0:
+            raise ModelConfigurationError("خريطة Grad-CAM الناتجة فارغة أو غير صالحة.")
+
+        return {
+            "available": True,
+            "method": "Grad-CAM",
+            "target_layer": conv_layer.name,
+            "width": int(values.shape[1]),
+            "height": int(values.shape[0]),
+            "heatmap": np.round(values, 3).tolist(),
+            "notice": "الخريطة توضح تأثيرات النموذج الحسابية بشكل تقريبي، ولا تحدد الإصابة أو تستبدل تفسير اختصاصي الأشعة.",
+        }
+
+    def predict(self, image: Image.Image, include_explanation: bool = True) -> dict[str, Any]:
+        if not self.ready or self.model is None:
+            raise ModelUnavailableError(self.unavailable_message)
+
+        batch = self._prepare_input(image)
+        with self._lock:
+            raw = self.model.predict(batch, verbose=0)
 
         values = np.asarray(raw, dtype=np.float64).reshape(-1)
         if values.size != len(self.labels):
@@ -175,7 +237,8 @@ class ModelService:
         if not np.all(np.isfinite(values)):
             raise ModelConfigurationError("أنتج النموذج قيماً غير صالحة.")
 
-        # Keep a proper probability-like distribution for display, but do not call it calibrated.
+        # The upstream notebook's final Dense layer has softmax activation.
+        # Preserve normalized probabilities when present; otherwise apply softmax to logits.
         if np.all(values >= 0) and np.all(values <= 1) and np.isclose(values.sum(), 1.0, atol=1e-3):
             scores = values
         else:
@@ -184,7 +247,7 @@ class ModelService:
             scores = exp_values / exp_values.sum()
 
         winner = int(np.argmax(scores))
-        return {
+        result: dict[str, Any] = {
             "label": self.labels[winner],
             "score": round(float(scores[winner]), 6),
             "scores": [
@@ -193,8 +256,21 @@ class ModelService:
                     zip(self.labels, scores.tolist()), key=lambda item: item[1], reverse=True
                 )
             ],
-            "input_size": {"width": width, "height": height},
+            "input_size": {"width": int(batch.shape[2]), "height": int(batch.shape[1])},
             "preprocessing": self.preprocessing,
             "color_order": self.color_order,
-            "interpretation": "model_output_score",
+            "interpretation": "model_output_score_not_clinically_calibrated",
         }
+
+        if include_explanation:
+            try:
+                result["explanation"] = self._compute_gradcam(batch, winner)
+            except Exception:
+                # A visualization failure must not fabricate an explanation or hide the model result.
+                result["explanation"] = {
+                    "available": False,
+                    "method": "Grad-CAM",
+                    "message": "لم تتوفر خريطة Grad-CAM لهذا النموذج. النتيجة الحسابية أعلاه مستقلة عن الخريطة.",
+                }
+
+        return result
