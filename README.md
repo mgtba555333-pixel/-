@@ -14,7 +14,7 @@ An Arabic-first research web app for chest X-ray classification, optional Grad-C
 - Optional Grad-CAM if the loaded Keras architecture exposes a compatible convolution layer.
 - Held-out evaluation report: accuracy, precision, recall, F1, specificity, ROC-AUC, Brier score, ECE, and bootstrap intervals.
 - Unit tests and GitHub Actions quality checks.
-- Model weights are not committed into Git history. They are downloaded locally from the model host and excluded by `.gitignore`.
+- Model weights are not committed into Git history. They are downloaded locally from the model host, SHA-256 verified, and excluded by `.gitignore`.
 
 ## Model source and download
 
